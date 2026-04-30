@@ -1,0 +1,203 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import AgentChatWidget from '../components/islands/AgentChatWidget';
+---
+
+<BaseLayout title="About — Thomas Abraham" description="10+ years building full-stack systems. Now building Agentic AI at the Bank of England.">
+
+  <!-- Header -->
+  <div class="mb-12">
+    <h1 class="text-4xl font-bold text-white mb-3">Thomas Abraham</h1>
+    <p class="text-agent-500 font-mono text-lg mb-4">Product Engineer · Agentic AI Builder</p>
+    <div class="flex flex-wrap gap-3 text-sm text-gray-400">
+      <span>📍 London, UK</span>
+      <span>·</span>
+      <a href="mailto:ta.abraham@outlook.com" class="hover:text-agent-400 transition-colors">ta.abraham@outlook.com</a>
+      <span>·</span>
+      <a href="https://www.linkedin.com/in/tvabraham" target="_blank" rel="noopener" class="text-agent-500 hover:text-agent-400 transition-colors">linkedin.com/in/tvabraham ↗</a>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
+
+    <!-- Left column: Bio + Skills -->
+    <div class="lg:col-span-2 space-y-10">
+
+      <!-- Bio -->
+      <section>
+        <h2 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <span class="w-1 h-5 bg-agent-500 rounded-full inline-block"></span>
+          About
+        </h2>
+        <div class="text-gray-400 leading-relaxed space-y-3">
+          <p>
+            I'm a multi-skilled, self-driven Full-Stack Software Engineer with over 10 years of expertise
+            delivering scalable web and mobile solutions across the UK, New Zealand, and India.
+          </p>
+          <p>
+            At the <span class="text-white font-medium">Bank of England</span>, I architect and maintain
+            production systems using React, TypeScript, C#, .NET, and Azure — while pioneering
+            AI-augmented workflows that increase team velocity without sacrificing code quality.
+          </p>
+          <p>
+            My current focus is <span class="text-agent-400 font-medium">Agentic AI</span> — building
+            systems that reason, use tools, collaborate across agents, and self-correct. This portfolio
+            is the live proof.
+          </p>
+        </div>
+      </section>
+
+      <!-- Experience -->
+      <section>
+        <h2 class="text-lg font-semibold text-white mb-6 flex items-center gap-2">
+          <span class="w-1 h-5 bg-agent-500 rounded-full inline-block"></span>
+          Experience
+        </h2>
+        <div class="space-y-6">
+          {[
+            {
+              role: 'Product Engineer',
+              company: 'Bank of England',
+              location: 'London, UK',
+              period: 'July 2023 – Present',
+              highlights: [
+                'Full-stack systems: React/Redux/TypeScript frontend · C#/.NET/MS SQL backend',
+                'Pioneered AI-augmented workflows using GitHub Copilot, Claude, and GPT-5',
+                'Scrum Master — sprint planning, refinement, reviews, retrospectives',
+                'Release Champion — Azure DevOps deployment lifecycle ownership',
+                'Automated E2E testing with Cypress; unit testing with Jest/NUnit/xUnit',
+              ],
+            },
+            {
+              role: 'Full-Stack .NET Developer',
+              company: 'Reserve Bank of New Zealand',
+              location: 'Wellington, NZ',
+              period: 'June 2021 – February 2023',
+              highlights: [
+                'Azure Functions for file processing, calendar automation, and notifications',
+                'DevOps pipelines with Bicep (Infrastructure as Code), TeamCity, Octopus Deploy',
+                'Integrated market data services with Refinitiv Real-Time Optimised API',
+                'Upgraded .NET 4.6 → 4.8; increased unit test coverage across suite',
+              ],
+            },
+            {
+              role: 'Full-Stack Software Developer',
+              company: 'Glassbox Limited',
+              location: 'Palmerston North, NZ',
+              period: 'September 2015 – January 2021',
+              highlights: [
+                'Built retail petroleum management modules in Angular/TypeScript/ASP.NET Web API',
+                'Led migration of fuel reconciliation module from Silverlight to Angular 6',
+                'Cross-platform mobile app using NativeScript, Angular 4, and .NET Core',
+                'Rewrote core accounts module to support 5× increase in account capacity',
+              ],
+            },
+          ].map(({ role, company, location, period, highlights }) => (
+            <div class="border-l-2 border-gray-800 pl-5 hover:border-agent-700 transition-colors">
+              <div class="flex flex-wrap items-start justify-between gap-1 mb-1">
+                <div>
+                  <span class="text-white font-semibold">{role}</span>
+                  <span class="text-gray-500"> · </span>
+                  <span class="text-agent-400">{company}</span>
+                  <span class="text-gray-600 text-xs ml-2">{location}</span>
+                </div>
+                <span class="text-xs text-gray-600 font-mono shrink-0">{period}</span>
+              </div>
+              <ul class="mt-2 space-y-1">
+                {highlights.map((h) => (
+                  <li class="text-gray-500 text-sm flex gap-2">
+                    <span class="text-gray-700 shrink-0">›</span>{h}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <!-- Education -->
+      <section>
+        <h2 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <span class="w-1 h-5 bg-agent-500 rounded-full inline-block"></span>
+          Education
+        </h2>
+        <div class="space-y-3">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-white text-sm font-medium">Graduate Diploma in ICT (Software Development)</p>
+              <p class="text-gray-500 text-xs">UCOL, New Zealand</p>
+            </div>
+          </div>
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-white text-sm font-medium">Bachelor of Technology in IT</p>
+              <p class="text-gray-500 text-xs">Mahatma Gandhi University, India</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- Right column: Skills + Chat -->
+    <div class="space-y-8">
+
+      <!-- Skills -->
+      <section>
+        <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Tech Stack</h2>
+        <div class="space-y-4">
+          {[
+            { label: 'Frontend', items: ['React', 'TypeScript', 'Redux', 'Angular', 'NativeScript'] },
+            { label: 'Backend', items: ['C#', '.NET', 'ASP.NET Web API', 'Node.js'] },
+            { label: 'Cloud & DevOps', items: ['Azure', 'Azure Functions', 'Bicep', 'Azure DevOps', 'CI/CD'] },
+            { label: 'AI & Agentic', items: ['LangGraph', 'RAG', 'GitHub Copilot', 'Claude', 'GPT-5'] },
+            { label: 'Data', items: ['MS SQL', 'Entity Framework', 'pgvector', 'MySQL'] },
+            { label: 'Testing', items: ['Jest', 'Cypress', 'NUnit', 'xUnit'] },
+          ].map(({ label, items }) => (
+            <div>
+              <p class="text-xs text-gray-600 font-mono mb-1.5">{label}</p>
+              <div class="flex flex-wrap gap-1.5">
+                {items.map((item) => (
+                  <span class="text-xs bg-gray-900 border border-gray-800 text-gray-400 px-2 py-0.5 rounded">
+                    {item}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <!-- Links -->
+      <section>
+        <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Links</h2>
+        <div class="space-y-2">
+          <a href="https://www.linkedin.com/in/tvabraham" target="_blank" rel="noopener"
+             class="flex items-center gap-2 text-sm text-gray-400 hover:text-agent-400 transition-colors">
+            <span class="text-agent-600">↗</span> linkedin.com/in/tvabraham
+          </a>
+          <a href="mailto:ta.abraham@outlook.com"
+             class="flex items-center gap-2 text-sm text-gray-400 hover:text-agent-400 transition-colors">
+            <span class="text-agent-600">✉</span> ta.abraham@outlook.com
+          </a>
+          <a href="/certifications"
+             class="flex items-center gap-2 text-sm text-gray-400 hover:text-agent-400 transition-colors">
+            <span class="text-agent-600">🎓</span> View Certifications
+          </a>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- Chat widget -->
+  <div class="mt-16 border-t border-gray-800 pt-12">
+    <h2 class="text-lg font-semibold text-white mb-2">Ask My AI</h2>
+    <p class="text-gray-500 text-sm mb-6">
+      Powered by a self-correcting RAG agent — ask anything about my background, skills, or experience.
+      <span class="text-gray-700">(Phase 2 — coming soon)</span>
+    </p>
+    <AgentChatWidget client:load />
+  </div>
+
+</BaseLayout>

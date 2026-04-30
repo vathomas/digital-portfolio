@@ -1,0 +1,137 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Certifications — Thomas Abraham" description="AI, cloud, and professional certifications earned by Thomas Abraham.">
+
+  <div class="mb-10">
+    <h1 class="text-3xl font-bold text-white mb-2">Certifications</h1>
+    <p class="text-gray-400">Verified credentials in Agentic AI, Generative AI, Cloud, and professional development.</p>
+  </div>
+
+  <!-- AI & Cloud — hero section -->
+  <section class="mb-12">
+    <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-5 flex items-center gap-2">
+      <span class="w-1 h-4 bg-agent-500 rounded-full inline-block"></span>
+      AI &amp; Cloud
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {[
+        {
+          title: 'Agentic AI',
+          issuer: 'DeepLearning.AI',
+          date: 'April 11, 2026',
+          type: 'Course Certificate',
+          id: 'd8ca5671-c7ae-4259-a7e4-5804ea6e1774',
+          highlight: true,
+          verifyUrl: 'https://learn.deeplearning.ai/certificates/d8ca5671-c7ae-4259-a7e4-5804ea6e1774',
+        },
+        {
+          title: 'Generative AI for Software Development',
+          issuer: 'DeepLearning.AI',
+          date: 'April 28, 2026',
+          type: 'Professional Certificate · 3 Courses',
+          id: '9572c975-f4ea-4949-893c-50a876f0ea8a',
+          highlight: true,
+          verifyUrl: 'https://learn.deeplearning.ai/certificates/9572c975-f4ea-4949-893c-50a876f0ea8a',
+        },
+        {
+          title: 'AI-Powered Software and System Design',
+          issuer: 'DeepLearning.AI',
+          date: 'April 28, 2026',
+          type: 'Course Certificate',
+          id: '2026e7b2-50aa-48dd-9ee1-531d865dbbea',
+          verifyUrl: 'https://learn.deeplearning.ai/certificates/2026e7b2-50aa-48dd-9ee1-531d865dbbea',
+        },
+        {
+          title: 'Introduction to Generative AI for Software Development',
+          issuer: 'DeepLearning.AI',
+          date: 'April 20, 2026',
+          type: 'Course Certificate',
+          id: '301638da-cc6a-4248-9303-eb1ab06b507f',
+          verifyUrl: 'https://learn.deeplearning.ai/certificates/301638da-cc6a-4248-9303-eb1ab06b507f',
+        },
+        {
+          title: 'Team Software Engineering with AI',
+          issuer: 'DeepLearning.AI',
+          date: 'April 24, 2026',
+          type: 'Course Certificate',
+          id: 'e7147d7a-6d2b-496b-a17f-a07f10c7c4f2',
+          verifyUrl: 'https://learn.deeplearning.ai/certificates/e7147d7a-6d2b-496b-a17f-a07f10c7c4f2',
+        },
+        {
+          title: 'Build RAG Applications: Get Started',
+          issuer: 'IBM / Coursera',
+          date: 'April 28, 2026',
+          type: 'Course Certificate',
+          id: '43MGTIFYU0F9',
+          verifyUrl: 'https://www.coursera.org/verify/43MGTIFYU0F9',
+        },
+        {
+          title: 'Develop Generative AI Applications: Get Started',
+          issuer: 'IBM / Coursera',
+          date: 'April 22, 2026',
+          type: 'Course Certificate',
+          id: '00E544DHP9ZZ',
+          verifyUrl: 'https://www.coursera.org/verify/00E544DHP9ZZ',
+        },
+        {
+          title: 'Microsoft Certified: Azure Fundamentals',
+          issuer: 'Microsoft',
+          date: '',
+          type: 'AZ-900',
+          id: 'AZ-900',
+          highlight: false,
+          verifyUrl: '',
+        },
+      ].map(({ title, issuer, date, type, id, highlight, verifyUrl }) => (
+        <div class={`bg-gray-900 border rounded-xl p-5 flex flex-col gap-3 ${highlight ? 'border-agent-800' : 'border-gray-800'}`}>
+          <div class="flex items-start justify-between gap-2">
+            <span class={`text-xs font-mono px-2 py-0.5 rounded border ${highlight ? 'bg-agent-900/40 text-agent-400 border-agent-800' : 'bg-gray-800 text-gray-500 border-gray-700'}`}>
+              {type}
+            </span>
+          </div>
+          <div>
+            <h3 class="text-white font-semibold text-sm leading-snug mb-1">{title}</h3>
+            <p class="text-agent-500 text-xs font-mono">{issuer}</p>
+            {date && <p class="text-gray-600 text-xs mt-0.5">{date}</p>}
+          </div>
+          {verifyUrl && (
+            <a href={verifyUrl} target="_blank" rel="noopener"
+               class="text-xs text-gray-600 hover:text-agent-400 transition-colors mt-auto">
+              Verify ↗
+            </a>
+          )}
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <!-- Professional Development -->
+  <section>
+    <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-5 flex items-center gap-2">
+      <span class="w-1 h-4 bg-gray-700 rounded-full inline-block"></span>
+      Professional Development · Udemy
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      {[
+        { title: 'Become a SuperLearner 2: Speed Reading & Memory', date: 'Sep 2023', id: 'UC-256a779f-15f5-44af-8b41-f87ae3c75754' },
+        { title: 'Life Coach Certification Masterclass: 3 Certifications In 1', date: 'Nov 2023', id: 'UC-c063d4c1-bef3-49c1-8be7-6259532d595e' },
+        { title: 'Decision Making: Solve Problems with Emotional Intelligence', date: 'Sep 2023', id: 'UC-45412d1a-f0a6-4a37-bedf-a8658da5fb19' },
+        { title: 'Perfect English Pronunciation: British English', date: 'Sep 2023', id: 'UC-ac06fece-b6db-4b45-8fa3-23f9db15fa87' },
+      ].map(({ title, date, id }) => (
+        <div class="bg-gray-900/50 border border-gray-800 rounded-lg px-4 py-3 flex items-center justify-between gap-4">
+          <div>
+            <p class="text-gray-300 text-sm">{title}</p>
+            <p class="text-gray-600 text-xs mt-0.5 font-mono">{date}</p>
+          </div>
+          <a href={`https://www.udemy.com/certificate/${id}/`} target="_blank" rel="noopener"
+             class="text-xs text-gray-600 hover:text-agent-400 transition-colors shrink-0">
+            Verify ↗
+          </a>
+        </div>
+      ))}
+    </div>
+  </section>
+
+</BaseLayout>

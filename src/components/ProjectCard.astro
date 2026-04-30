@@ -1,0 +1,40 @@
+---
+import type { CollectionEntry } from 'astro:content';
+
+interface Props {
+  project: CollectionEntry<'projects'>;
+}
+
+const { project } = Astro.props;
+const { title, description, techStack, agentLogicType, status } = project.data;
+
+const statusColors: Record<string, string> = {
+  live: 'text-agent-400',
+  wip: 'text-yellow-400',
+  archived: 'text-gray-500',
+};
+---
+
+<a href={`/projects/${project.id}`}
+   class="block bg-gray-900 border border-gray-800 rounded-xl p-6 hover:border-agent-700 hover:bg-gray-900/80 transition-all group">
+  <div class="flex items-start justify-between mb-3">
+    <span class="text-xs font-mono bg-gray-800 text-gray-400 px-2 py-0.5 rounded border border-gray-700">
+      {agentLogicType}
+    </span>
+    <span class={`text-xs font-mono ${statusColors[status]}`}>{status}</span>
+  </div>
+
+  <h3 class="text-lg font-semibold text-white mb-2 group-hover:text-agent-400 transition-colors">
+    {title}
+  </h3>
+  <p class="text-gray-400 text-sm leading-relaxed mb-4">{description}</p>
+
+  <div class="flex flex-wrap gap-2">
+    {techStack.slice(0, 4).map((t) => (
+      <span class="text-xs bg-gray-800 text-gray-500 px-2 py-0.5 rounded">{t}</span>
+    ))}
+    {techStack.length > 4 && (
+      <span class="text-xs text-gray-600">+{techStack.length - 4} more</span>
+    )}
+  </div>
+</a>

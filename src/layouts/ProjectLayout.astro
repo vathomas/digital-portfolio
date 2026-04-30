@@ -1,0 +1,57 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import type { CollectionEntry } from 'astro:content';
+
+interface Props {
+  project: CollectionEntry<'projects'>;
+}
+
+const { project } = Astro.props;
+const { title, description, techStack, agentLogicType, status, demoUrl, repoUrl } = project.data;
+
+const statusColors: Record<string, string> = {
+  live: 'bg-agent-900 text-agent-400 border border-agent-700',
+  wip: 'bg-yellow-900/40 text-yellow-400 border border-yellow-700',
+  archived: 'bg-gray-800 text-gray-500 border border-gray-700',
+};
+---
+
+<BaseLayout title={`${title} — AgentPortfolio`} description={description}>
+  <article>
+    <header class="mb-10">
+      <div class="flex items-center gap-3 mb-3">
+        <span class={`text-xs px-2 py-0.5 rounded font-mono ${statusColors[status]}`}>{status}</span>
+        <span class="text-xs px-2 py-0.5 rounded bg-gray-800 text-gray-400 border border-gray-700 font-mono">
+          {agentLogicType}
+        </span>
+      </div>
+      <h1 class="text-3xl font-bold text-white mb-3">{title}</h1>
+      <p class="text-gray-400 text-lg">{description}</p>
+
+      <div class="flex flex-wrap gap-2 mt-4">
+        {techStack.map((t) => (
+          <span class="text-xs bg-gray-800 text-gray-300 px-2 py-1 rounded">{t}</span>
+        ))}
+      </div>
+
+      <div class="flex gap-4 mt-6">
+        {demoUrl && (
+          <a href={demoUrl} target="_blank" rel="noopener"
+             class="text-sm text-agent-400 hover:text-agent-300 underline">
+            Live Demo →
+          </a>
+        )}
+        {repoUrl && (
+          <a href={repoUrl} target="_blank" rel="noopener"
+             class="text-sm text-gray-400 hover:text-gray-300 underline">
+            GitHub →
+          </a>
+        )}
+      </div>
+    </header>
+
+    <div class="prose prose-invert prose-gray max-w-none">
+      <slot />
+    </div>
+  </article>
+</BaseLayout>

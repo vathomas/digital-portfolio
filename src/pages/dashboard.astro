@@ -1,0 +1,14 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import AgentDashboard from '../components/islands/AgentDashboard';
+---
+
+<BaseLayout title="Dashboard — AgentPortfolio" description="Agent performance metrics and tool-use playground.">
+  <h1 class="text-3xl font-bold text-white mb-2">Agent Skills Dashboard</h1>
+  <p class="text-gray-400 mb-10">
+    Performance charts across models, tool-use accuracy metrics, and a live playground to trigger real agent actions.
+  </p>
+
+  <!-- Phase 2: AgentDashboard island will be fully wired here -->
+  <AgentDashboard client:visible />
+</BaseLayout>

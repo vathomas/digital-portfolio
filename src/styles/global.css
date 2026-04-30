@@ -1,0 +1,11 @@
+@import "tailwindcss";
+
+@theme {
+  --color-agent-50: #f0fdf4;
+  --color-agent-100: #dcfce7;
+  --color-agent-400: #4ade80;
+  --color-agent-500: #22c55e;
+  --color-agent-600: #16a34a;
+  --color-agent-700: #15803d;
+  --color-agent-900: #14532d;
+}
