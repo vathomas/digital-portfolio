@@ -1,16 +1,82 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import DeepResearchAgent from '../components/islands/DeepResearchAgent';
 ---
 
-<BaseLayout title="Deep Research — AgentPortfolio" description="Autonomous market intelligence agent.">
-  <h1 class="text-3xl font-bold text-white mb-2">Deep Research Agent</h1>
-  <p class="text-gray-400 mb-10">
-    Submit a topic and watch the agent browse, fact-check, and generate a PDF report in real time.
-    Live thought stream powered by WebSockets.
-  </p>
-
-  <!-- Phase 2: DeepResearchAgent island will be mounted here -->
-  <div class="rounded-xl border border-dashed border-gray-700 bg-gray-900/50 p-12 text-center text-gray-600 font-mono text-sm">
-    [ DeepResearchAgent — Phase 2 ]
+<BaseLayout
+  title="Deep Research Agent — Thomas Abraham"
+  description="Autonomous market intelligence agent that plans, searches, fact-checks, and emits a PDF report — streaming every thought live."
+>
+  <!-- Header -->
+  <div class="mb-10">
+    <div class="inline-flex items-center gap-2 text-xs text-agent-500 bg-agent-900/30 border border-agent-800 px-3 py-1 rounded-full mb-4 font-mono">
+      <span class="w-1.5 h-1.5 bg-agent-500 rounded-full animate-pulse"></span>
+      Showcase 2 · Plan-and-Execute Autonomous Agent
+    </div>
+    <h1 class="text-3xl font-bold text-white mb-3">Deep Research Agent</h1>
+    <p class="text-gray-400 max-w-2xl leading-relaxed">
+      Submit a topic — the agent decomposes it into sub-questions, searches sources,
+      cross-references findings, and emits a downloadable PDF. Every thought streams
+      live so you can see the reasoning unfold.
+    </p>
   </div>
+
+  <!-- Architecture strip -->
+  <section class="mb-10 grid grid-cols-2 md:grid-cols-5 gap-2 text-xs font-mono">
+    {[
+      { step: 'plan', label: 'Decompose topic' },
+      { step: 'search', label: 'ArXiv + web' },
+      { step: 'factcheck', label: 'Cross-reference' },
+      { step: 'summarize', label: 'Draft report' },
+      { step: 'pdf', label: 'Generate PDF' },
+    ].map(({ step, label }, i) => (
+      <div class="flex flex-col gap-1 bg-gray-900/50 border border-gray-800 rounded-lg px-3 py-2.5">
+        <span class="text-agent-500">{i + 1}. {step}</span>
+        <span class="text-gray-500">{label}</span>
+      </div>
+    ))}
+  </section>
+
+  <!-- Agent island -->
+  <DeepResearchAgent client:load />
+
+  <!-- Tech notes -->
+  <section class="mt-12 pt-8 border-t border-gray-800">
+    <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">How it works</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+      <div class="bg-gray-900/40 border border-gray-800 rounded-lg p-4">
+        <p class="text-white font-medium mb-1">Streaming protocol</p>
+        <p class="text-gray-500 leading-relaxed">
+          Server-Sent Events stream the agent's thoughts from the Astro API route to
+          the React island as the pipeline runs. Each node — plan, search, fact-check,
+          summarize — yields events that render directly into the live log.
+        </p>
+      </div>
+      <div class="bg-gray-900/40 border border-gray-800 rounded-lg p-4">
+        <p class="text-white font-medium mb-1">PDF generation</p>
+        <p class="text-gray-500 leading-relaxed">
+          The final report is rendered server-side with <span class="text-agent-400 font-mono">pdf-lib</span>
+          — pure JavaScript, no external services. Includes the executive summary,
+          sources, citations, and run metadata.
+        </p>
+      </div>
+      <div class="bg-gray-900/40 border border-gray-800 rounded-lg p-4">
+        <p class="text-white font-medium mb-1">Cost &amp; time tracking</p>
+        <p class="text-gray-500 leading-relaxed">
+          Per-node token counts are tallied against published API rates. The
+          dashboard contrasts agent cost against the equivalent analyst rate
+          (4-hour baseline, $50/hr).
+        </p>
+      </div>
+      <div class="bg-gray-900/40 border border-gray-800 rounded-lg p-4">
+        <p class="text-white font-medium mb-1">Mock vs. real mode</p>
+        <p class="text-gray-500 leading-relaxed">
+          Currently demos with deterministic mock sources. Real-mode swap-points
+          are marked in the source: Tavily for search, Claude Sonnet for synthesis,
+          OpenAI for fact-check grading.
+        </p>
+      </div>
+    </div>
+  </section>
+
 </BaseLayout>
