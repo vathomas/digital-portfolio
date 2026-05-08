@@ -22,6 +22,12 @@ export const POST: APIRoute = async ({ request }) => {
         headers: { 'Content-Type': 'application/json' },
       });
     }
+    if (message.length > 1000) {
+      return new Response(JSON.stringify({ error: 'message must be 1000 characters or fewer' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
 
     const result = await askPortfolioAgent(message);
 

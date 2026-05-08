@@ -12,6 +12,8 @@
     "astro": "astro"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.76",
+    "@ai-sdk/openai": "^3.0.63",
     "@astrojs/node": "^10.0.6",
     "@astrojs/react": "^5.0.4",
     "@langchain/core": "^1.1.45",

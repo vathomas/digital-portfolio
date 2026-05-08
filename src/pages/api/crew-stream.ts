@@ -22,6 +22,9 @@ export const GET: APIRoute = async ({ request }) => {
   if (!prompt) {
     return new Response('prompt query param is required', { status: 400 });
   }
+  if (prompt.length > 500) {
+    return new Response('prompt must be 500 characters or fewer', { status: 400 });
+  }
   if (language !== 'python' && language !== 'typescript') {
     return new Response('language must be "python" or "typescript"', { status: 400 });
   }

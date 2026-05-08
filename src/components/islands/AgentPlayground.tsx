@@ -128,7 +128,6 @@ export default function AgentPlayground() {
               ReAct trace {running ? '· streaming' : complete ? `· ${complete.stepCount} steps in ${(complete.durationMs / 1000).toFixed(1)}s` : '· idle'}
             </span>
           </div>
-          <span className="text-xs font-mono text-yellow-500/80">[mock mode]</span>
         </div>
 
         <div ref={traceRef} className="px-4 py-3 max-h-96 overflow-y-auto space-y-3">
@@ -245,5 +244,8 @@ function lightMarkdown(s: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/\*\*(.+?)\*\*/g, '<strong class="text-white">$1</strong>')
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-agent-400 hover:text-agent-300 underline">$1</a>');
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, text, url) => {
+      const safe = /^https?:\/\//i.test(url) ? url : '#';
+      return `<a href="${safe}" class="text-agent-400 hover:text-agent-300 underline" rel="noopener noreferrer">${text}</a>`;
+    });
 }

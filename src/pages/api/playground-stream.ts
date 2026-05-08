@@ -18,6 +18,9 @@ export const GET: APIRoute = async ({ request }) => {
   if (!query) {
     return new Response('query param is required', { status: 400 });
   }
+  if (query.length > 500) {
+    return new Response('query must be 500 characters or fewer', { status: 400 });
+  }
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
@@ -27,7 +30,7 @@ export const GET: APIRoute = async ({ request }) => {
       };
 
       try {
-        const generator = runPlayground(query);
+        const generator = runPlayground(query, request.headers);
         let result;
         while (true) {
           const { value, done } = await generator.next();
