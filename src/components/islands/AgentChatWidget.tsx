@@ -1,31 +1,228 @@
-// Phase 2: Wire to LangGraph RAG backend + Vercel AI SDK streaming
+import { useState, useRef, useEffect } from 'react';
+
+type Thought =
+  | { node: 'retrieve'; query: string; hits: { id: string; topic: string }[] }
+  | { node: 'grade'; verdict: 'pass' | 'fail'; reason: string }
+  | { node: 'rewrite'; from: string; to: string }
+  | { node: 'generate'; tokens: number };
+
+interface ChatTurn {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  thoughts?: Thought[];
+  attempts?: number;
+}
+
+const SUGGESTIONS = [
+  'What does Thomas do at the Bank of England?',
+  'Tell me about his agentic AI projects',
+  'What certifications does he hold?',
+  'Where is he moving to in 2026?',
+];
+
 export default function AgentChatWidget() {
+  const [turns, setTurns] = useState<ChatTurn[]>([]);
+  const [input, setInput] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [showThoughts, setShowThoughts] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+  }, [turns]);
+
+  async function send(message: string) {
+    const text = message.trim();
+    if (!text || busy) return;
+
+    const userTurn: ChatTurn = { id: crypto.randomUUID(), role: 'user', content: text };
+    setTurns((t) => [...t, userTurn]);
+    setInput('');
+    setBusy(true);
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text }),
+      });
+      const data = (await res.json()) as {
+        answer?: string;
+        thoughts?: Thought[];
+        attempts?: number;
+        error?: string;
+      };
+
+      const assistantTurn: ChatTurn = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: data.answer ?? data.error ?? 'No response.',
+        thoughts: data.thoughts,
+        attempts: data.attempts,
+      };
+      setTurns((t) => [...t, assistantTurn]);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Request failed';
+      setTurns((t) => [
+        ...t,
+        { id: crypto.randomUUID(), role: 'assistant', content: `Error: ${msg}` },
+      ]);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
-    <div className="rounded-xl border border-dashed border-gray-700 bg-gray-900/50 p-8">
-      <div className="flex items-center gap-2 mb-4">
-        <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
-        <span className="text-xs font-mono text-gray-500">AgentChatWidget — Phase 2 placeholder</span>
+    <div className="rounded-xl border border-gray-800 bg-gray-900/60 overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-gray-800 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 bg-agent-500 rounded-full animate-pulse"></span>
+          <span className="text-xs font-mono text-gray-400">
+            Recursive Portfolio Agent · LangGraph
+          </span>
+          <span className="text-xs font-mono text-yellow-500/80 ml-2">[mock mode]</span>
+        </div>
+        <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={showThoughts}
+            onChange={(e) => setShowThoughts(e.target.checked)}
+            className="accent-agent-500"
+          />
+          🧠 See Thoughts
+        </label>
       </div>
-      <div className="bg-gray-800 rounded-lg p-4 mb-3 min-h-32 flex items-center justify-center">
-        <p className="text-gray-600 text-sm font-mono">Chat messages will appear here</p>
+
+      {/* Transcript */}
+      <div ref={scrollRef} className="px-4 py-4 max-h-96 overflow-y-auto space-y-4">
+        {turns.length === 0 && (
+          <div className="text-center py-6">
+            <p className="text-gray-500 text-sm mb-4">
+              Ask the agent anything about Thomas's background, projects, or experience.
+            </p>
+            <div className="flex flex-wrap gap-2 justify-center">
+              {SUGGESTIONS.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => send(s)}
+                  className="text-xs bg-gray-800 hover:bg-gray-700 border border-gray-700 hover:border-agent-700 text-gray-300 px-3 py-1.5 rounded-full transition-colors"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {turns.map((turn) => (
+          <div
+            key={turn.id}
+            className={`flex ${turn.role === 'user' ? 'justify-end' : 'justify-start'}`}
+          >
+            <div
+              className={`max-w-[85%] rounded-lg px-4 py-2.5 text-sm leading-relaxed ${
+                turn.role === 'user'
+                  ? 'bg-agent-700/40 border border-agent-800 text-gray-100'
+                  : 'bg-gray-800/80 border border-gray-700 text-gray-200'
+              }`}
+            >
+              <p className="whitespace-pre-wrap">{turn.content}</p>
+
+              {turn.role === 'assistant' && showThoughts && turn.thoughts && (
+                <details open className="mt-3 pt-3 border-t border-gray-700/60">
+                  <summary className="text-xs text-agent-400 cursor-pointer font-mono">
+                    Reasoning trace · {turn.thoughts.length} steps
+                    {turn.attempts ? ` · ${turn.attempts} retries` : ''}
+                  </summary>
+                  <ol className="mt-2 space-y-1.5">
+                    {turn.thoughts.map((t, i) => (
+                      <li
+                        key={i}
+                        className="text-xs font-mono text-gray-400 bg-gray-950/60 border border-gray-800 rounded px-2 py-1.5"
+                      >
+                        <ThoughtLine thought={t} />
+                      </li>
+                    ))}
+                  </ol>
+                </details>
+              )}
+            </div>
+          </div>
+        ))}
+
+        {busy && (
+          <div className="flex justify-start">
+            <div className="bg-gray-800/80 border border-gray-700 rounded-lg px-4 py-2.5 text-sm text-gray-500">
+              <span className="inline-flex gap-1">
+                <span className="w-1.5 h-1.5 bg-agent-500 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                <span className="w-1.5 h-1.5 bg-agent-500 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                <span className="w-1.5 h-1.5 bg-agent-500 rounded-full animate-bounce"></span>
+              </span>
+            </div>
+          </div>
+        )}
       </div>
-      <div className="flex gap-2">
+
+      {/* Composer */}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          send(input);
+        }}
+        className="border-t border-gray-800 px-4 py-3 flex gap-2"
+      >
         <input
           type="text"
-          disabled
-          placeholder="Ask me about my background, skills, or projects..."
-          className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm text-gray-500 placeholder-gray-700 cursor-not-allowed"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          disabled={busy}
+          placeholder="Ask about Thomas's background, skills, or projects…"
+          className="flex-1 bg-gray-800 border border-gray-700 focus:border-agent-600 focus:outline-none rounded-lg px-4 py-2 text-sm text-gray-100 placeholder-gray-600 disabled:opacity-50"
         />
         <button
-          disabled
-          className="bg-gray-800 border border-gray-700 text-gray-600 px-4 py-2 rounded-lg text-sm cursor-not-allowed"
+          type="submit"
+          disabled={busy || !input.trim()}
+          className="bg-agent-600 hover:bg-agent-500 disabled:bg-gray-800 disabled:text-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
         >
           Send
         </button>
-      </div>
-      <p className="text-xs text-gray-700 mt-2 font-mono">
-        Self-correcting RAG · LangGraph · pgvector · "See Thoughts" toggle
-      </p>
+      </form>
     </div>
   );
+}
+
+function ThoughtLine({ thought }: { thought: Thought }) {
+  switch (thought.node) {
+    case 'retrieve':
+      return (
+        <span>
+          <span className="text-agent-500">retrieve</span> · query={JSON.stringify(thought.query)} ·
+          hits=[{thought.hits.map((h) => h.id).join(', ') || '∅'}]
+        </span>
+      );
+    case 'grade':
+      return (
+        <span>
+          <span className={thought.verdict === 'pass' ? 'text-agent-500' : 'text-yellow-500'}>
+            grade
+          </span>{' '}
+          · verdict={thought.verdict} · {thought.reason}
+        </span>
+      );
+    case 'rewrite':
+      return (
+        <span>
+          <span className="text-yellow-500">rewrite</span> · {JSON.stringify(thought.from)} →{' '}
+          {JSON.stringify(thought.to)}
+        </span>
+      );
+    case 'generate':
+      return (
+        <span>
+          <span className="text-agent-500">generate</span> · {thought.tokens} chars
+        </span>
+      );
+  }
 }
