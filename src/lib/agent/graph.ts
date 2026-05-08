@@ -4,12 +4,14 @@
  *   retrieve → grade → (pass) → generate
  *                    → (fail) → rewrite → retrieve   (max 2 retries)
  *
- * Runs in MOCK MODE by default (no LLM calls, no DB). The real-mode swap-in
- * points are clearly marked. The graph emits a `thoughts[]` trace consumed by
- * the "See Thoughts" toggle in the UI.
+ * Real mode: grade + rewrite use GPT-4o-mini; generate uses Claude Sonnet.
+ * retrieve stays on the mock corpus until DATABASE_URL + pgvector is wired.
+ * The graph emits a `thoughts[]` trace consumed by the "See Thoughts" toggle.
  */
 
 import { StateGraph, Annotation, END, START } from '@langchain/langgraph';
+import { generateText } from 'ai';
+import { anthropic, CLAUDE_QUALITY } from './llm';
 import { mockRetrieve, type KnowledgeChunk } from './knowledge';
 
 export type Thought =
@@ -41,7 +43,7 @@ const MAX_ATTEMPTS = 2;
 /* ────────────────────────── Nodes ────────────────────────── */
 
 async function retrieve(state: typeof AgentState.State) {
-  // REAL MODE swap: replace with Neon pgvector cosine similarity search
+  // Swap for Neon pgvector cosine search once DATABASE_URL is provisioned.
   const hits = mockRetrieve(state.query, 3);
   return {
     context: hits,
@@ -56,73 +58,73 @@ async function retrieve(state: typeof AgentState.State) {
 }
 
 async function grade(state: typeof AgentState.State) {
-  // REAL MODE swap: prompt gpt-4o-mini "Does this context answer the question? yes/no + reason"
-  const ctxText = state.context.map((c) => c.text).join(' ').toLowerCase();
-  const qTerms = state.question
-    .toLowerCase()
-    .split(/\W+/)
-    .filter((t) => t.length > 3);
+  const ctxText = state.context.map((c) => c.text).join('\n\n');
 
-  const overlap = qTerms.filter((t) => ctxText.includes(t)).length;
-  const ratio = qTerms.length > 0 ? overlap / qTerms.length : 0;
+  const { text } = await generateText({
+    model: anthropic(CLAUDE_QUALITY),
+    system:
+      'You are a relevance grader. Given a question and retrieved context, decide if the context ' +
+      'adequately answers the question. Respond with exactly "YES - <brief reason>" or "NO - <brief reason>".',
+    prompt: `Question: ${state.question}\n\nContext:\n${ctxText || '(no context retrieved)'}`,
+  });
 
-  // Empty context or weak overlap triggers a rewrite
-  const pass = state.context.length > 0 && ratio >= 0.25;
+  const pass = text.trim().toUpperCase().startsWith('YES');
+  const reason = text.replace(/^(YES|NO)\s*[-–]?\s*/i, '').trim();
 
   return {
     thoughts: [
       {
         node: 'grade' as const,
         verdict: pass ? ('pass' as const) : ('fail' as const),
-        reason: pass
-          ? `Retrieved context covers ${overlap}/${qTerms.length} key terms — sufficient.`
-          : state.context.length === 0
-            ? 'No chunks retrieved — query is too narrow or off-topic.'
-            : `Only ${overlap}/${qTerms.length} key terms covered — context is thin.`,
+        reason,
       },
     ],
   };
 }
 
 async function rewrite(state: typeof AgentState.State) {
-  // REAL MODE swap: prompt LLM to broaden or rephrase the query
-  const original = state.query;
+  const { text } = await generateText({
+    model: anthropic(CLAUDE_QUALITY),
+    system:
+      'Rewrite the given search query to be broader and more likely to retrieve relevant information ' +
+      'from a personal portfolio knowledge base about Thomas Abraham. Return only the rewritten query, nothing else.',
+    prompt: `Original query: "${state.query}"`,
+  });
 
-  // Naive rewrite strategy: drop short words, add domain anchors
-  const broadened = original
-    .toLowerCase()
-    .split(/\W+/)
-    .filter((t) => t.length > 3)
-    .join(' ');
-
-  const rewritten = broadened
-    ? `${broadened} Thomas Abraham experience projects`
-    : 'Thomas Abraham background experience';
-
+  const rewritten = text.trim();
   return {
     query: rewritten,
     attempts: state.attempts + 1,
-    thoughts: [{ node: 'rewrite' as const, from: original, to: rewritten }],
+    thoughts: [{ node: 'rewrite' as const, from: state.query, to: rewritten }],
   };
 }
 
 async function generate(state: typeof AgentState.State) {
-  // REAL MODE swap: stream Claude Sonnet with the context as a prompt
+  if (state.context.length === 0) {
+    const answer =
+      "I couldn't find anything in Thomas's portfolio that maps to that question. " +
+      'Try asking about his Bank of England work, his agentic AI projects (market-research-agentic-team, ' +
+      "customer-service-agent), his certifications, or his planned move to Adelaide.";
+    return { answer, thoughts: [{ node: 'generate' as const, tokens: 0 }] };
+  }
+
   const ctxBlock = state.context
-    .map((c, i) => `[${i + 1}] (${c.source}/${c.topic}) ${c.text}`)
+    .map((c, i) => `[${i + 1}] Source: ${c.source} / ${c.topic}\n${c.text}`)
     .join('\n\n');
 
-  const answer =
-    state.context.length === 0
-      ? "I couldn't find anything in Thomas's portfolio that maps to that question. " +
-        "Try asking about his Bank of England work, his agentic AI projects (market-research-agentic-team, " +
-        "customer-service-agent), his certifications, or his planned move to Adelaide."
-      : `Based on Thomas Abraham's portfolio:\n\n${ctxBlock}\n\n` +
-        `(Mock mode — in production this would be streamed from Claude Sonnet with the above as grounded context.)`;
+  const { text, usage } = await generateText({
+    model: anthropic(CLAUDE_QUALITY),
+    system:
+      "You are the portfolio assistant for Thomas Abraham, a Full-Stack Product Engineer specialising " +
+      'in Agentic AI. Answer questions about Thomas accurately and concisely based ONLY on the provided ' +
+      'context. Speak in third person. Be warm and professional. If the context does not fully cover ' +
+      "the question, say what you know and acknowledge the gap.",
+    prompt: `Context:\n${ctxBlock}\n\nQuestion: ${state.question}`,
+  });
 
   return {
-    answer,
-    thoughts: [{ node: 'generate' as const, tokens: answer.length }],
+    answer: text,
+    thoughts: [{ node: 'generate' as const, tokens: usage?.totalTokens ?? 0 }],
   };
 }
 

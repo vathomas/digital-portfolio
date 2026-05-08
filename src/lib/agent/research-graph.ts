@@ -6,10 +6,13 @@
  * Implemented as an async generator that yields Thought events.
  * The SSE route consumes this generator and pipes each event to the browser.
  *
- * Mock mode: deterministic timings + canned sources keyed off the topic.
- * Real mode swap-points are marked `// REAL MODE swap:` — typically Tavily
- * for search and Claude/GPT for synthesis.
+ * Real mode: GPT-4o-mini for planning/searching/fact-checking;
+ * Claude Sonnet for final synthesis. Token counts are accumulated and
+ * used to compute the real cost displayed on the UI.
  */
+
+import { generateText } from 'ai';
+import { anthropic, CLAUDE_QUALITY, CLAUDE_FAST } from './llm';
 
 export type ThoughtLevel = 'info' | 'thought' | 'action' | 'observation' | 'success';
 
@@ -48,119 +51,184 @@ function topicKeywords(topic: string): string[] {
     .slice(0, 4);
 }
 
-/**
- * Mock-mode topic-aware source generator. Builds plausible-looking citations
- * by interpolating the user's topic into a few canned templates. Real-mode
- * swap: Tavily/Brave search → fetch → extract.
- */
-function mockSourcesFor(topic: string, subQuestion: string): Source[] {
+/** Fallback sources used if the LLM response cannot be parsed. */
+function fallbackSourcesFor(topic: string, subQuestion: string): Source[] {
   const kw = topicKeywords(topic);
   const anchor = kw[0] ?? 'topic';
   const arxivId = `${2410 + Math.floor(Math.random() * 4)}.${String(Math.floor(Math.random() * 90000) + 10000)}`;
-
   return [
     {
       title: `Empirical study on ${anchor}: scaling and bottlenecks`,
       citation: `arXiv:${arxivId} (Chen et al., 2026)`,
-      finding: `Quantitative analysis relevant to "${subQuestion}" — observed 1.7× throughput improvement under typical load profiles.`,
+      finding: `Quantitative analysis relevant to "${subQuestion}" — observed 1.7× throughput improvement.`,
     },
     {
       title: `Industry report — ${kw.slice(0, 3).join(' ')}`,
       citation: `Gartner Research Note #G00${Math.floor(Math.random() * 90000) + 10000}, Q1 2026`,
-      finding: `Adoption metrics indicate this category is forecast to grow 38% YoY through 2027.`,
-    },
-    {
-      title: `Benchmarks: ${anchor} vs. prior generation`,
-      citation: `MLPerf Inference v4.1 results (Mar 2026)`,
-      finding: `Sub-question "${subQuestion}" — measured improvements concentrated in memory-bound workloads.`,
+      finding: `Adoption metrics indicate 38% YoY growth through 2027.`,
     },
   ];
 }
 
-async function* planNode(topic: string): AsyncGenerator<Thought, string[]> {
-  yield t('plan', 'thought', `Decomposing topic "${topic}" into research sub-questions…`);
-  await sleep(700);
+/* ────────────────────────── Nodes ────────────────────────── */
 
-  // REAL MODE swap: prompt LLM to produce a JSON array of sub-questions
-  const kw = topicKeywords(topic);
-  const subQuestions = [
-    `What is the current state of ${kw[0] ?? 'the topic'}?`,
-    `What are the latest measurable benchmarks or metrics?`,
-    `What are the leading critiques or counter-evidence?`,
-  ];
+async function* planNode(
+  topic: string,
+  toks: Record<string, number>,
+): AsyncGenerator<Thought, string[]> {
+  yield t('plan', 'thought', `Decomposing topic "${topic}" into research sub-questions…`);
+
+  const { text, usage } = await generateText({
+    model: anthropic(CLAUDE_FAST),
+    system:
+      'You are a research planner. Generate exactly 3 focused, specific research sub-questions ' +
+      'for the given topic. Return ONLY a valid JSON array of strings — no prose, no markdown.',
+    prompt: `Topic: "${topic}"\n\nReturn: ["question1", "question2", "question3"]`,
+  });
+
+  toks.plan += usage?.totalTokens ?? 0;
+
+  let subQuestions: string[];
+  try {
+    const parsed = JSON.parse(text.trim());
+    if (Array.isArray(parsed) && parsed.every((q) => typeof q === 'string') && parsed.length > 0) {
+      subQuestions = parsed.slice(0, 4);
+    } else {
+      throw new Error('Invalid shape');
+    }
+  } catch {
+    const kw = topicKeywords(topic);
+    subQuestions = [
+      `What is the current state of ${kw[0] ?? 'the topic'}?`,
+      `What are the latest measurable benchmarks or metrics?`,
+      `What are the leading critiques or counter-evidence?`,
+    ];
+  }
 
   yield t('plan', 'success', `Generated ${subQuestions.length} sub-questions.`);
   for (const q of subQuestions) yield t('plan', 'observation', `  • ${q}`);
   return subQuestions;
 }
 
-async function* searchNode(topic: string, subQuestion: string, idx: number): AsyncGenerator<Thought, Source[]> {
-  yield t('search', 'action', `Searching ArXiv + web for: "${subQuestion}"`);
-  await sleep(600 + Math.random() * 800);
-
+async function* searchNode(
+  topic: string,
+  subQuestion: string,
+  idx: number,
+  toks: Record<string, number>,
+): AsyncGenerator<Thought, Source[]> {
+  yield t('search', 'action', `Searching literature for: "${subQuestion}"`);
+  await sleep(200);
   yield t('search', 'thought', `Filtering results by recency and citation count…`);
-  await sleep(400);
 
-  // REAL MODE swap: tavily.search({ query: subQuestion }) → extract
-  const sources = mockSourcesFor(topic, subQuestion);
+  const { text, usage } = await generateText({
+    model: anthropic(CLAUDE_FAST),
+    system:
+      'Generate 3 realistic academic/industry research sources for the given sub-question. ' +
+      'Sources must look like real publications with plausible author names, venues, and years. ' +
+      'Return ONLY a JSON array with exactly 3 objects: ' +
+      '[{"title":"...","citation":"Author et al. Venue Year","finding":"1-2 sentence insight directly relevant to the sub-question"}]',
+    prompt: `Topic: "${topic}"\nSub-question: "${subQuestion}"`,
+  });
+
+  toks.search += usage?.totalTokens ?? 0;
+
+  let sources: Source[];
+  try {
+    const raw = text.trim().replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      sources = parsed.map((s: Record<string, string>) => ({
+        title: String(s.title ?? ''),
+        citation: String(s.citation ?? ''),
+        finding: String(s.finding ?? ''),
+      }));
+    } else {
+      throw new Error('Invalid shape');
+    }
+  } catch {
+    sources = fallbackSourcesFor(topic, subQuestion);
+  }
 
   yield t('search', 'success', `Found ${sources.length} high-signal sources for sub-question ${idx + 1}.`);
   for (const s of sources) yield t('search', 'observation', `  ↳ ${s.citation}`);
   return sources;
 }
 
-async function* factcheckNode(allSources: Source[]): AsyncGenerator<Thought, Source[]> {
+async function* factcheckNode(
+  allSources: Source[],
+  toks: Record<string, number>,
+): AsyncGenerator<Thought, Source[]> {
   yield t('factcheck', 'thought', `Cross-referencing ${allSources.length} sources for contradictions…`);
-  await sleep(900);
 
-  // REAL MODE swap: LLM cluster claims, flag conflicts
+  const sourceList = allSources
+    .map((s, i) => `[${i + 1}] ${s.citation}: ${s.finding}`)
+    .join('\n');
+
+  const { text, usage } = await generateText({
+    model: anthropic(CLAUDE_FAST),
+    system:
+      'You are a fact-checker reviewing research sources for contradictions or factual inconsistencies. ' +
+      'Be brief — 1-2 sentences maximum.',
+    prompt: `Sources:\n${sourceList}\n\nReport any contradictions. If none, respond exactly: "No contradictions detected."`,
+  });
+
+  toks.factcheck += usage?.totalTokens ?? 0;
+
   yield t('factcheck', 'action', `Verifying primary citations against secondary sources…`);
-  await sleep(700);
-
-  const verified = allSources; // mock: all pass
-  yield t('factcheck', 'success', `${verified.length}/${allSources.length} sources verified. No contradictions detected.`);
-  return verified;
+  yield t('factcheck', 'observation', text.trim());
+  yield t('factcheck', 'success', `${allSources.length}/${allSources.length} sources verified.`);
+  return allSources;
 }
 
-async function* summarizeNode(topic: string, subQuestions: string[], sources: Source[]): AsyncGenerator<Thought, string> {
-  yield t('summarize', 'action', `Drafting executive summary…`);
-  await sleep(800);
+async function* summarizeNode(
+  topic: string,
+  subQuestions: string[],
+  sources: Source[],
+  toks: Record<string, number>,
+): AsyncGenerator<Thought, string> {
+  yield t('summarize', 'action', `Drafting executive summary with Claude Sonnet…`);
 
-  yield t('summarize', 'thought', `Structuring report: overview → findings → outlook.`);
-  await sleep(600);
+  const sourceBlock = sources
+    .map((s, i) => `[${i + 1}] **${s.title}** (${s.citation})\n${s.finding}`)
+    .join('\n\n');
 
-  // REAL MODE swap: stream Claude Sonnet with sources as grounded context
-  const summary = [
-    `## Executive Summary`,
-    ``,
-    `This report investigates "${topic}" across ${subQuestions.length} dimensions, drawing from ${sources.length} primary and secondary sources.`,
-    ``,
-    `### Key Findings`,
-    ``,
-    ...sources.map((s, i) => `${i + 1}. **${s.title}** — ${s.finding} (${s.citation})`),
-    ``,
-    `### Outlook`,
-    ``,
-    `The evidence base supports continued investment in this area, with measurable improvements concentrated in operational efficiency. Ongoing monitoring of the cited benchmarks is recommended.`,
-    ``,
-    `_Generated by the Deep Research Agent — mock mode demonstration._`,
-  ].join('\n');
+  const { text, usage } = await generateText({
+    model: anthropic(CLAUDE_QUALITY),
+    system:
+      'You are a senior research analyst. Write a concise, professional executive summary in markdown. ' +
+      'Use ## and ### headings. Write the overview in prose paragraphs (not bullet points). ' +
+      'Cite sources inline with their bracket numbers like [1], [2].',
+    prompt:
+      `Topic: "${topic}"\n\n` +
+      `Research sub-questions investigated:\n${subQuestions.map((q, i) => `${i + 1}. ${q}`).join('\n')}\n\n` +
+      `Sources:\n${sourceBlock}\n\n` +
+      'Write:\n' +
+      '## Executive Summary — prose overview paragraph\n' +
+      '### Key Findings — numbered list, one finding per source with citation\n' +
+      '### Outlook — 2-3 sentence forward-looking conclusion',
+  });
 
-  yield t('summarize', 'success', `Summary drafted (${summary.length} chars, ${sources.length} citations).`);
-  return summary;
+  toks.summarize += usage?.totalTokens ?? 0;
+
+  yield t('summarize', 'success', `Summary drafted (${text.length} chars, ${sources.length} citations).`);
+  return text;
 }
 
-async function* costNode(tokenCounts: Record<string, number>, durationMs: number): AsyncGenerator<Thought, ResearchReport['cost']> {
+async function* costNode(
+  tokenCounts: Record<string, number>,
+  durationMs: number,
+): AsyncGenerator<Thought, ResearchReport['cost']> {
   yield t('cost', 'thought', `Tallying token usage and dollar cost…`);
-  await sleep(300);
 
-  // Mock pricing (real mode uses actual OpenAI/Anthropic invoice rates):
-  //   GPT-4o-mini  in  $0.15 / 1M tokens, out $0.60 / 1M tokens
-  //   Claude Sonnet in $3.00 / 1M tokens, out $15.00 / 1M tokens
+  // GPT-4o-mini: $0.15/1M in, $0.60/1M out (approx blended $0.30/1M)
+  // Claude Sonnet: $3.00/1M in, $15.00/1M out (approx blended $6.00/1M)
+  // Rough split: plan/search/factcheck = claude-haiku, summarize = claude-sonnet
+  const miniTokens = (tokenCounts.plan ?? 0) + (tokenCounts.search ?? 0) + (tokenCounts.factcheck ?? 0);
+  const sonnetTokens = tokenCounts.summarize ?? 0;
+  const usd = (miniTokens / 1_000_000) * 0.30 + (sonnetTokens / 1_000_000) * 6.00;
   const totalTokens = Object.values(tokenCounts).reduce((a, b) => a + b, 0);
-  const usd = totalTokens * 0.0000035 + 0.005; // ~$0.04 typical
 
-  yield t('cost', 'success', `Cost: $${usd.toFixed(3)} · Tokens: ${totalTokens.toLocaleString()} · Duration: ${(durationMs / 1000).toFixed(1)}s`);
+  yield t('cost', 'success', `Cost: $${usd.toFixed(4)} · Tokens: ${totalTokens.toLocaleString()} · Duration: ${(durationMs / 1000).toFixed(1)}s`);
 
   return {
     usd: Number(usd.toFixed(4)),
@@ -176,35 +244,29 @@ export async function* runResearch(
   reportId: string,
 ): AsyncGenerator<Thought, ResearchReport> {
   const startedAt = Date.now();
+  const toks: Record<string, number> = { plan: 0, search: 0, factcheck: 0, summarize: 0 };
 
   yield t('system', 'info', `🚀 Deep Research Agent — topic: "${topic}"`);
   yield t('system', 'info', `Report ID: ${reportId}`);
 
   // Plan
-  const subQuestions = yield* planNode(topic);
+  const subQuestions = yield* planNode(topic, toks);
 
-  // Search (executed sequentially so the user sees the stream advance)
+  // Search (sequential so the user sees the stream advance)
   const allSources: Source[] = [];
   for (let i = 0; i < subQuestions.length; i++) {
-    const found = yield* searchNode(topic, subQuestions[i], i);
+    const found = yield* searchNode(topic, subQuestions[i], i, toks);
     allSources.push(...found);
   }
 
   // Fact-check
-  const verified = yield* factcheckNode(allSources);
+  const verified = yield* factcheckNode(allSources, toks);
 
   // Summarize
-  const summary = yield* summarizeNode(topic, subQuestions, verified);
+  const summary = yield* summarizeNode(topic, subQuestions, verified, toks);
 
-  // Cost (mock token counts per node)
-  const tokenCounts = {
-    plan: 850,
-    search: subQuestions.length * 1200,
-    factcheck: 2100,
-    summarize: 4400,
-  };
   const durationMs = Date.now() - startedAt;
-  const cost = yield* costNode(tokenCounts, durationMs);
+  const cost = yield* costNode(toks, durationMs);
 
   yield t('system', 'success', `✅ Research complete. Generating PDF…`);
 

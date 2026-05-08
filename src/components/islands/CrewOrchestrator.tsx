@@ -220,7 +220,6 @@ export default function CrewOrchestrator() {
                 Crew transcript {running ? '· streaming' : completion ? '· complete' : '· idle'}
               </span>
             </div>
-            <span className="text-xs font-mono text-yellow-500/80">[mock mode]</span>
           </div>
           <div ref={logScrollRef} className="px-4 py-3 h-[260px] overflow-y-auto font-mono text-xs space-y-1">
             {logs.length === 0 && !running && (

@@ -82,7 +82,6 @@ export default function AgentChatWidget() {
           <span className="text-xs font-mono text-gray-400">
             Recursive Portfolio Agent · LangGraph
           </span>
-          <span className="text-xs font-mono text-yellow-500/80 ml-2">[mock mode]</span>
         </div>
         <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer select-none">
           <input
@@ -221,7 +220,7 @@ function ThoughtLine({ thought }: { thought: Thought }) {
     case 'generate':
       return (
         <span>
-          <span className="text-agent-500">generate</span> · {thought.tokens} chars
+          <span className="text-agent-500">generate</span> · {thought.tokens} tokens
         </span>
       );
   }

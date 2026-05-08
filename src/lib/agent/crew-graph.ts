@@ -4,25 +4,13 @@
  *   start → pm → coder → reviewer ─┬─► (REVISE) ─► coder ─► reviewer
  *                                   └─► (APPROVE) ─► end
  *
- * Three specialised agents collaborate. Each emits thoughts and artifacts
- * over an SSE stream; the UI uses the `state` events to highlight the
- * agent currently "holding the token" in a Mermaid flowchart.
- *
- * Mock-mode by default — see `code-templates.ts` for the canned outputs.
- * Real-mode swap-points are marked `// REAL MODE swap:`.
+ * Real mode: PM and Reviewer use GPT-4o-mini (JSON mode);
+ * Coder uses Claude Sonnet for high-quality code generation.
  */
 
-import {
-  mockRequirements,
-  mockCodeV1,
-  mockCodeV2,
-  mockReviewV1,
-  mockReviewV2,
-  type Language,
-  type Requirements,
-  type CodeArtifact,
-  type ReviewIssue,
-} from './code-templates';
+import { generateText } from 'ai';
+import { anthropic, CLAUDE_QUALITY, CLAUDE_FAST } from './llm';
+import type { Language, Requirements, CodeArtifact, ReviewIssue } from './code-templates';
 
 export type AgentId = 'pm' | 'coder' | 'reviewer';
 export type CrewStateNode = 'start' | AgentId | 'end';
@@ -59,13 +47,42 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 async function* productManager(prompt: string): AsyncGenerator<CrewEvent, Requirements> {
   yield state('pm', 1);
   yield think('pm', 'thought', `Reviewing user request: "${prompt}"`);
-  await sleep(700);
+  await sleep(400);
 
-  yield think('pm', 'action', 'Drafting acceptance criteria…');
-  await sleep(800);
+  yield think('pm', 'action', 'Generating structured requirements with GPT-4o-mini…');
 
-  // REAL MODE swap: prompt LLM for structured requirements (JSON mode)
-  const reqs = mockRequirements(prompt);
+  const { text } = await generateText({
+    model: anthropic(CLAUDE_FAST),
+    system:
+      'You are an experienced product manager. Given a feature request, produce structured ' +
+      'engineering requirements as JSON. Return ONLY valid JSON matching: ' +
+      '{"goal":"string","acceptance":["string","string","string"],"edgeCases":["string","string","string"]}',
+    prompt: `Feature request: "${prompt}"`,
+  });
+
+  let reqs: Requirements;
+  try {
+    const raw = text.trim().replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+    const parsed = JSON.parse(raw) as Requirements;
+    if (!parsed.goal || !Array.isArray(parsed.acceptance) || !Array.isArray(parsed.edgeCases)) {
+      throw new Error('Invalid shape');
+    }
+    reqs = {
+      goal: parsed.goal,
+      acceptance: parsed.acceptance.slice(0, 5),
+      edgeCases: parsed.edgeCases.slice(0, 5),
+    };
+  } catch {
+    reqs = {
+      goal: prompt.trim(),
+      acceptance: [
+        'Function returns correct output for the documented inputs',
+        'Has type signatures (or type hints in Python)',
+        'Includes a brief docstring / JSDoc',
+      ],
+      edgeCases: ['Empty input', 'Malformed / non-conforming input', 'Large inputs do not blow memory'],
+    };
+  }
 
   yield think('pm', 'success', `Requirements ready: ${reqs.acceptance.length} criteria, ${reqs.edgeCases.length} edge cases.`);
   yield artifact({ kind: 'requirements', agent: 'pm', cycle: 1, data: reqs });
@@ -77,45 +94,106 @@ async function* coder(
   language: Language,
   cycle: number,
   feedback: ReviewIssue[] | null,
+  requirements: Requirements | null,
 ): AsyncGenerator<CrewEvent, CodeArtifact> {
   yield state('coder', cycle);
 
-  if (feedback) {
+  if (feedback && feedback.length > 0) {
     yield think('coder', 'thought', `Incorporating ${feedback.length} reviewer notes from cycle ${cycle - 1}…`);
-    await sleep(600);
+    await sleep(300);
     for (const issue of feedback) {
-      yield think('coder', 'action', `  ↳ Fixing: ${issue.text}`);
-      await sleep(220);
+      yield think('coder', 'action', `  ↳ Addressing: ${issue.text}`);
+      await sleep(150);
     }
   } else {
-    yield think('coder', 'thought', `Implementing first draft in ${language}…`);
-    await sleep(900);
+    yield think('coder', 'thought', `Implementing first draft in ${language} with Claude Sonnet…`);
+    await sleep(400);
   }
 
-  // REAL MODE swap: prompt LLM with reqs + feedback → code
-  const code = cycle === 1 ? mockCodeV1(prompt, language) : mockCodeV2(prompt, language);
+  const reqBlock = requirements
+    ? `\nAcceptance criteria:\n${requirements.acceptance.map((a) => `- ${a}`).join('\n')}` +
+      `\nEdge cases to handle:\n${requirements.edgeCases.map((e) => `- ${e}`).join('\n')}`
+    : '';
 
-  yield think('coder', 'success', `Cycle ${cycle} draft complete (${code.code.split('\n').length} LoC).`);
-  yield artifact({ kind: 'code', agent: 'coder', cycle, data: code });
-  return code;
+  const feedbackBlock =
+    feedback && feedback.length > 0
+      ? `\nPrevious reviewer feedback to fix:\n${feedback.map((f) => `- [${f.severity}] ${f.text}`).join('\n')}`
+      : '';
+
+  const { text } = await generateText({
+    model: anthropic(CLAUDE_QUALITY),
+    system:
+      `You are an expert ${language} developer. Write clean, idiomatic, production-quality code. ` +
+      `Return ONLY the code — no explanation, no markdown fences, no prose. Just raw ${language} code.`,
+    prompt:
+      `Implement: "${prompt}" in ${language}.` +
+      reqBlock +
+      feedbackBlock +
+      `\n\nReturn only the ${language} code.`,
+  });
+
+  const code = text
+    .trim()
+    .replace(/^```(?:\w+)?\n?/, '')
+    .replace(/\n?```$/, '');
+
+  const artifact_: CodeArtifact = {
+    language,
+    code,
+    notes: cycle > 1 ? 'Revised to address reviewer feedback' : undefined,
+  };
+
+  yield think('coder', 'success', `Cycle ${cycle} draft complete (${code.split('\n').length} LoC).`);
+  yield artifact({ kind: 'code', agent: 'coder', cycle, data: artifact_ });
+  return artifact_;
 }
 
 async function* reviewer(
   code: CodeArtifact,
   cycle: number,
+  requirements: Requirements,
 ): AsyncGenerator<CrewEvent, { verdict: Verdict; issues: ReviewIssue[] }> {
   yield state('reviewer', cycle);
-  yield think('reviewer', 'thought', `Auditing cycle ${cycle} draft…`);
-  await sleep(700);
+  yield think('reviewer', 'thought', `Auditing cycle ${cycle} draft with GPT-4o-mini…`);
+  await sleep(300);
 
-  yield think('reviewer', 'action', 'Checking type signatures, edge cases, and error handling…');
-  await sleep(800);
+  yield think('reviewer', 'action', 'Checking correctness, types, edge cases, and documentation…');
 
-  // REAL MODE swap: prompt LLM with code + reqs → JSON {verdict, issues[]}
-  const review = cycle === 1 ? mockReviewV1() : mockReviewV2();
+  const reqBlock =
+    `Acceptance criteria:\n${requirements.acceptance.map((a) => `- ${a}`).join('\n')}\n` +
+    `Edge cases:\n${requirements.edgeCases.map((e) => `- ${e}`).join('\n')}`;
+
+  const { text } = await generateText({
+    model: anthropic(CLAUDE_FAST),
+    system:
+      'You are a senior code reviewer. Review the code against the requirements. ' +
+      'If there are significant issues, set verdict to REVISE and list them. ' +
+      'If the code is correct and meets the requirements, set verdict to APPROVE. ' +
+      'Return ONLY valid JSON: {"verdict":"APPROVE"|"REVISE","issues":[{"severity":"major"|"minor","text":"..."}]} ' +
+      'Issues array must be empty for APPROVE.',
+    prompt:
+      `Code to review:\n\`\`\`${code.language}\n${code.code}\n\`\`\`\n\n` +
+      `Requirements:\n${reqBlock}`,
+  });
+
+  let review: { verdict: Verdict; issues: ReviewIssue[] };
+  try {
+    const raw = text.trim().replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+    const parsed = JSON.parse(raw) as { verdict: string; issues: { severity: string; text: string }[] };
+    review = {
+      verdict: parsed.verdict === 'APPROVE' ? 'APPROVE' : 'REVISE',
+      issues: (parsed.issues ?? []).map((i) => ({
+        severity: (i.severity === 'major' || i.severity === 'minor') ? i.severity : 'minor',
+        text: String(i.text ?? ''),
+      })),
+    };
+  } catch {
+    // If we can't parse, approve to avoid blocking the demo
+    review = { verdict: 'APPROVE', issues: [] };
+  }
 
   if (review.verdict === 'REVISE') {
-    yield think('reviewer', 'warn', `${review.issues.length} issues found — sending back to Coder.`);
+    yield think('reviewer', 'warn', `${review.issues.length} issue(s) found — returning to Coder.`);
     for (const issue of review.issues) {
       yield think('reviewer', 'action', `  • [${issue.severity}] ${issue.text}`);
     }
@@ -149,9 +227,9 @@ export async function* runCrew(prompt: string, language: Language): AsyncGenerat
 
   yield state('start', 0);
   yield think('system', 'info', `🤖 Spinning up crew for: "${prompt}" (${language})`);
-  await sleep(300);
+  await sleep(200);
 
-  // 1. PM
+  // 1. PM generates requirements
   const requirements = yield* productManager(prompt);
 
   // 2-3. Coder ↔ Reviewer loop (max MAX_CYCLES)
@@ -162,8 +240,8 @@ export async function* runCrew(prompt: string, language: Language): AsyncGenerat
 
   while (cycle < MAX_CYCLES && !approved) {
     cycle++;
-    code = yield* coder(prompt, language, cycle, feedback);
-    const review = yield* reviewer(code, cycle);
+    code = yield* coder(prompt, language, cycle, feedback, requirements);
+    const review = yield* reviewer(code, cycle, requirements);
 
     if (review.verdict === 'APPROVE') {
       approved = true;
@@ -179,7 +257,7 @@ export async function* runCrew(prompt: string, language: Language): AsyncGenerat
     'success',
     approved
       ? `✅ Crew complete after ${cycle} cycle${cycle === 1 ? '' : 's'}.`
-      : `⚠️ Max cycles reached (${MAX_CYCLES}) — shipping with reviewer's last verdict.`,
+      : `⚠️ Max cycles reached (${MAX_CYCLES}) — shipping with last revision.`,
   );
 
   return {

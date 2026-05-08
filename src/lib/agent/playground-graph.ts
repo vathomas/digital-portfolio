@@ -4,12 +4,14 @@
  *   Thought → Action (tool call) → Observation → … → Final Answer
  *
  * Each iteration emits a Step event so the UI can render the trace as
- * it unfolds. The mock planner picks tools based on simple keyword
- * heuristics; in real mode the planner is an LLM with the tool registry
- * passed as the system prompt.
+ * it unfolds. The mock planner picks tools based on keyword heuristics;
+ * a real LLM planner swap-in would pass the tool registry as a system prompt.
+ *
+ * Pass the incoming request Headers so get_user_location can read
+ * Vercel's x-vercel-ip-city / country / timezone headers.
  */
 
-import { TOOL_REGISTRY } from './playground-tools';
+import { makeToolRegistry } from './playground-tools';
 
 export type StepKind = 'thought' | 'action' | 'observation' | 'answer' | 'system' | 'error';
 
@@ -40,7 +42,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 interface PlannedAction {
   thought: string;
-  tool: keyof typeof TOOL_REGISTRY | null;
+  tool: string | null;
   args: Record<string, string>;
 }
 
@@ -59,7 +61,7 @@ function planNext(query: string, observed: Record<string, unknown>): PlannedActi
   // 1. If we need location and don't have it, fetch it first
   if ((wantsLocation || wantsWeather) && !observed.location) {
     return {
-      thought: 'I need the user\'s location before I can fetch local weather or recommend something based on context.',
+      thought: "I need the user's location before I can fetch local weather or recommend something based on context.",
       tool: 'get_user_location',
       args: {},
     };
@@ -75,12 +77,13 @@ function planNext(query: string, observed: Record<string, unknown>): PlannedActi
     };
   }
 
-  // 3. Time
+  // 3. Time — pass through the timezone from location if available
   if (wantsTime && !observed.time) {
+    const tz = (observed.location as { timezone?: string })?.timezone;
     return {
-      thought: 'The user wants the current time — I\'ll call the time tool.',
+      thought: "The user wants the current time — I'll call the time tool.",
       tool: 'get_current_time',
-      args: {},
+      args: tz ? { timezone: tz } : {},
     };
   }
 
@@ -88,9 +91,10 @@ function planNext(query: string, observed: Record<string, unknown>): PlannedActi
   if (wantsProject && !observed.project) {
     const mood = (observed.weather as { mood_label?: string })?.mood_label ?? 'any';
     return {
-      thought: mood !== 'any'
-        ? `Weather suggests a "${mood}" mood — I'll search the portfolio for a matching project.`
-        : 'I\'ll search the portfolio without a mood filter and pick the best match.',
+      thought:
+        mood !== 'any'
+          ? `Weather suggests a "${mood}" mood — I'll search the portfolio for a matching project.`
+          : "I'll search the portfolio without a mood filter and pick the best match.",
       tool: 'search_portfolio_projects',
       args: { mood },
     };
@@ -139,11 +143,17 @@ function synthesizeAnswer(query: string, observed: Record<string, unknown>): str
 
 const MAX_ITERATIONS = 6;
 
-export async function* runPlayground(query: string): AsyncGenerator<Step, PlaygroundResult> {
+export async function* runPlayground(
+  query: string,
+  headers?: Headers,
+): AsyncGenerator<Step, PlaygroundResult> {
   const startedAt = Date.now();
   const observed: Record<string, unknown> = {};
   const steps: Step[] = [];
   const toolsUsed: string[] = [];
+
+  // Build tool registry with request headers for real location resolution
+  const TOOLS = makeToolRegistry(headers);
 
   yield emit({ kind: 'system', text: `🛠 Planning tool calls for: "${query}"` });
   await sleep(220);
@@ -158,7 +168,7 @@ export async function* runPlayground(query: string): AsyncGenerator<Step, Playgr
 
     // Action
     yield emit({ kind: 'action', tool: plan.tool, args: plan.args });
-    const tool = TOOL_REGISTRY[plan.tool];
+    const tool = TOOLS[plan.tool];
     if (!tool) {
       yield emit({ kind: 'error', text: `Unknown tool: ${plan.tool}` });
       break;

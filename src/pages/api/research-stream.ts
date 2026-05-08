@@ -20,6 +20,9 @@ export const GET: APIRoute = async ({ request }) => {
   if (!topic || !id) {
     return new Response('topic and id query params are required', { status: 400 });
   }
+  if (topic.length > 500) {
+    return new Response('topic must be 500 characters or fewer', { status: 400 });
+  }
 
   const encoder = new TextEncoder();
 
