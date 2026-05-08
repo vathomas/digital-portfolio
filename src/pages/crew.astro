@@ -1,16 +1,83 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import CrewOrchestrator from '../components/islands/CrewOrchestrator';
 ---
 
-<BaseLayout title="The Crew — AgentPortfolio" description="Multi-agent software architect crew with live Mermaid flowchart.">
-  <h1 class="text-3xl font-bold text-white mb-2">Software Architect Crew</h1>
-  <p class="text-gray-400 mb-10">
-    Watch three specialized agents collaborate: PM → Coder → Reviewer.
-    A live flowchart highlights which agent holds the token.
-  </p>
-
-  <!-- Phase 2: CrewOrchestrator + AgentFlowChart islands will be mounted here -->
-  <div class="rounded-xl border border-dashed border-gray-700 bg-gray-900/50 p-12 text-center text-gray-600 font-mono text-sm">
-    [ CrewOrchestrator — Phase 2 ]
+<BaseLayout
+  title="The Crew — Thomas Abraham"
+  description="Multi-agent software architect crew: Product Manager, Coder, and Reviewer collaborating with a live Mermaid flowchart."
+>
+  <!-- Header -->
+  <div class="mb-10">
+    <div class="inline-flex items-center gap-2 text-xs text-agent-500 bg-agent-900/30 border border-agent-800 px-3 py-1 rounded-full mb-4 font-mono">
+      <span class="w-1.5 h-1.5 bg-agent-500 rounded-full animate-pulse"></span>
+      Showcase 3 · Multi-Agent Orchestration
+    </div>
+    <h1 class="text-3xl font-bold text-white mb-3">Software Architect Crew</h1>
+    <p class="text-gray-400 max-w-2xl leading-relaxed">
+      Three specialised agents collaborate to ship code: the
+      <span class="text-purple-400 font-medium">Product Manager</span> defines requirements,
+      the <span class="text-agent-400 font-medium">Coder</span> writes the implementation, and the
+      <span class="text-yellow-400 font-medium">Reviewer</span> grades it — sending it back for revision until it
+      passes. The Mermaid flowchart highlights whichever agent is currently holding the token.
+    </p>
   </div>
+
+  <!-- Agent roster -->
+  <section class="mb-10 grid grid-cols-1 md:grid-cols-3 gap-3">
+    {[
+      { id: 'PM', color: 'text-purple-400', border: 'border-purple-800/60', label: 'Product Manager', desc: 'Decomposes the prompt into acceptance criteria + edge cases.' },
+      { id: 'Coder', color: 'text-agent-400', border: 'border-agent-800', label: 'Coder', desc: 'Drafts code from requirements; revises in response to reviewer feedback.' },
+      { id: 'Reviewer', color: 'text-yellow-400', border: 'border-yellow-800/60', label: 'Reviewer', desc: 'Audits code against requirements; verdict is APPROVE or REVISE.' },
+    ].map(({ id, color, border, label, desc }) => (
+      <div class={`rounded-lg border ${border} bg-gray-900/40 p-4`}>
+        <p class={`text-xs font-mono uppercase tracking-wider ${color} mb-1`}>{id}</p>
+        <p class="text-white font-medium mb-1">{label}</p>
+        <p class="text-sm text-gray-500 leading-relaxed">{desc}</p>
+      </div>
+    ))}
+  </section>
+
+  <!-- Crew island -->
+  <CrewOrchestrator client:load />
+
+  <!-- Tech notes -->
+  <section class="mt-12 pt-8 border-t border-gray-800">
+    <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">How it works</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+      <div class="bg-gray-900/40 border border-gray-800 rounded-lg p-4">
+        <p class="text-white font-medium mb-1">Token-passing pattern</p>
+        <p class="text-gray-500 leading-relaxed">
+          Each agent runs as an async generator that yields <span class="font-mono text-agent-400">state</span>,
+          <span class="font-mono text-agent-400">thought</span>, and <span class="font-mono text-agent-400">artifact</span>
+          events. The orchestrator threads them together; the SSE route emits them to the browser.
+        </p>
+      </div>
+      <div class="bg-gray-900/40 border border-gray-800 rounded-lg p-4">
+        <p class="text-white font-medium mb-1">Live Mermaid flowchart</p>
+        <p class="text-gray-500 leading-relaxed">
+          On every <span class="font-mono text-agent-400">state</span> event the React island re-renders the
+          Mermaid diagram with a <span class="font-mono">classDef active</span> on the agent currently
+          holding the token. Visited nodes get a softer "done" style.
+        </p>
+      </div>
+      <div class="bg-gray-900/40 border border-gray-800 rounded-lg p-4">
+        <p class="text-white font-medium mb-1">Feedback loop</p>
+        <p class="text-gray-500 leading-relaxed">
+          The Reviewer's verdict is either <span class="font-mono text-agent-400">APPROVE</span> (ship) or
+          <span class="font-mono text-yellow-400">REVISE</span> (return to Coder with itemised issues).
+          Capped at 2 cycles to keep runs bounded.
+        </p>
+      </div>
+      <div class="bg-gray-900/40 border border-gray-800 rounded-lg p-4">
+        <p class="text-white font-medium mb-1">Mock vs. real mode</p>
+        <p class="text-gray-500 leading-relaxed">
+          Mock-mode emits canned-but-realistic outputs keyed off the user prompt. Real-mode swap-points
+          are marked in <span class="font-mono text-agent-400">crew-graph.ts</span> — each agent becomes
+          a distinct LLM call (Claude Sonnet recommended for synthesis, OpenAI gpt-4o-mini for review).
+        </p>
+      </div>
+    </div>
+  </section>
+
 </BaseLayout>
