@@ -3,12 +3,67 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import AgentDashboard from '../components/islands/AgentDashboard';
 ---
 
-<BaseLayout title="Dashboard — AgentPortfolio" description="Agent performance metrics and tool-use playground.">
-  <h1 class="text-3xl font-bold text-white mb-2">Agent Skills Dashboard</h1>
-  <p class="text-gray-400 mb-10">
-    Performance charts across models, tool-use accuracy metrics, and a live playground to trigger real agent actions.
-  </p>
+<BaseLayout
+  title="Agent Skills Dashboard — Thomas Abraham"
+  description="Performance metrics across models and tools, plus a live ReAct tool-use playground."
+>
+  <!-- Header -->
+  <div class="mb-10">
+    <div class="inline-flex items-center gap-2 text-xs text-agent-500 bg-agent-900/30 border border-agent-800 px-3 py-1 rounded-full mb-4 font-mono">
+      <span class="w-1.5 h-1.5 bg-agent-500 rounded-full animate-pulse"></span>
+      Showcase 4 · Telemetry &amp; Tool-Use
+    </div>
+    <h1 class="text-3xl font-bold text-white mb-3">Agent Skills Dashboard</h1>
+    <p class="text-gray-400 max-w-2xl leading-relaxed">
+      Aggregated performance metrics across the production agents — Showcases 1-3 — broken down by
+      model and tool. Below, a live <span class="text-agent-400 font-medium">ReAct</span> playground
+      where you can trigger a tool-use event and watch the agent reason through it.
+    </p>
+  </div>
 
-  <!-- Phase 2: AgentDashboard island will be fully wired here -->
-  <AgentDashboard client:visible />
+  <!-- Dashboard island -->
+  <AgentDashboard client:load />
+
+  <!-- Tech notes -->
+  <section class="mt-12 pt-8 border-t border-gray-800">
+    <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">How it works</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+      <div class="bg-gray-900/40 border border-gray-800 rounded-lg p-4">
+        <p class="text-white font-medium mb-1">Telemetry source</p>
+        <p class="text-gray-500 leading-relaxed">
+          In production, every agent run from Showcases 1-3 writes a row to a Postgres
+          <span class="font-mono text-agent-400">agent_runs</span> table — model, tool calls,
+          latency, success, cost. The dashboard is a thin aggregation layer over that table.
+          Currently shows mock data with realistic distributions.
+        </p>
+      </div>
+      <div class="bg-gray-900/40 border border-gray-800 rounded-lg p-4">
+        <p class="text-white font-medium mb-1">Charts</p>
+        <p class="text-gray-500 leading-relaxed">
+          Powered by Recharts. The scatter plot reveals the latency-vs-quality
+          frontier: cloud models cluster top-right (slow + accurate); local Llama
+          variants trade quality for speed and cost.
+        </p>
+      </div>
+      <div class="bg-gray-900/40 border border-gray-800 rounded-lg p-4">
+        <p class="text-white font-medium mb-1">Playground pattern</p>
+        <p class="text-gray-500 leading-relaxed">
+          Classic ReAct loop: <span class="font-mono text-blue-400">thought</span> →
+          <span class="font-mono text-yellow-400">action</span> (tool call) →
+          <span class="font-mono text-gray-400">observation</span> → repeat → final answer.
+          Each step streams over SSE so the trace renders live.
+        </p>
+      </div>
+      <div class="bg-gray-900/40 border border-gray-800 rounded-lg p-4">
+        <p class="text-white font-medium mb-1">Mock vs. real mode</p>
+        <p class="text-gray-500 leading-relaxed">
+          The mock planner is a small heuristic (keyword → tool plan); the real-mode swap
+          is a single LLM call with the tool registry passed as a system prompt. Tool
+          implementations swap from canned data to OpenWeather + browser geolocation +
+          pgvector search.
+        </p>
+      </div>
+    </div>
+  </section>
+
 </BaseLayout>
