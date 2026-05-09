@@ -6,6 +6,18 @@ name: CI — Stage B (post-deploy on Preview)
 #   - ragas-eval  — Ragas evaluation gates faithfulness ≥ 0.80
 #   - e2e         — Playwright smoke test of all 4 showcases
 # Stage A (lint + typecheck + unit tests) lives in `.github/workflows/ci.yml`.
+#
+# Deployment Protection note:
+#   Vercel Previews are auth-walled by default ("Vercel Authentication" under
+#   Deployment Protection). To allow CI to reach the Preview URL, you have
+#   two options:
+#     A) Vercel dashboard → Project Settings → Deployment Protection →
+#        Vercel Authentication → "Only Production Deployments".
+#     B) Vercel dashboard → Project Settings → Deployment Protection →
+#        Protection Bypass for Automation → generate a secret and add it
+#        as a GitHub Actions secret named VERCEL_AUTOMATION_BYPASS_SECRET.
+#   Option B is more secure (Preview URLs stay private to people, but CI
+#   can still reach them via the bypass header).
 
 on:
   pull_request:
@@ -25,28 +37,73 @@ permissions:
 jobs:
   # ─────────────────────────────────────────────────────────────────────────
   # 1) Wait for Vercel to finish building the Preview deployment for this PR.
-  #    Outputs the Preview URL so the downstream jobs know where to point.
+  #    Reads the GitHub Deployments API rather than polling the URL itself —
+  #    that way Vercel's Deployment Protection (which 401s plain GET probes)
+  #    cannot block this step.
   # ─────────────────────────────────────────────────────────────────────────
   await-vercel:
     name: Wait for Vercel Preview
     runs-on: ubuntu-latest
-    # No checkout needed — we only need the Vercel API.
     permissions:
-      pull-requests: read
-      statuses: read
+      deployments: read
     outputs:
       preview-url: ${{ steps.vercel.outputs.url }}
     steps:
-      - name: Wait for the Vercel Preview deployment
+      - name: Wait for the Vercel Preview deployment via GitHub Deployments API
         id: vercel
-        # Pinned to a known-good release (avoid `@main` for security/repro).
-        uses: patrickedqvist/wait-for-vercel-preview@v1.3.2
+        uses: actions/github-script@v7
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          # 10 min covers a cold Vercel build with all integrations.
-          max_timeout: 600
-          # Match the GitHub Actions check name Vercel posts on the PR.
-          check_interval: 10
+          script: |
+            const sha = context.payload.pull_request.head.sha;
+            const owner = context.repo.owner;
+            const repo  = context.repo.repo;
+            const maxAttempts = 60;       // 60 × 10s = 10 min
+            const intervalMs  = 10_000;
+
+            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+              const { data: deployments } = await github.rest.repos.listDeployments({
+                owner, repo, sha,
+                per_page: 30,
+              });
+
+              for (const deployment of deployments) {
+                const { data: statuses } = await github.rest.repos.listDeploymentStatuses({
+                  owner, repo,
+                  deployment_id: deployment.id,
+                  per_page: 30,
+                });
+
+                // We want a SUCCESSful Preview deployment with a usable URL.
+                // Vercel reports state='success' once the build is live.
+                const success = statuses.find((s) => s.state === 'success');
+                if (success) {
+                  const url = success.environment_url || success.target_url;
+                  if (url) {
+                    core.info(`✅ Found Vercel Preview after ${attempt} attempt(s): ${url}`);
+                    core.setOutput('url', url);
+                    return;
+                  }
+                }
+
+                // Surface failure states early — no point waiting 10 min if Vercel errored.
+                const failed = statuses.find((s) =>
+                  ['failure', 'error'].includes(s.state),
+                );
+                if (failed) {
+                  core.setFailed(
+                    `Vercel deployment ${deployment.id} reported state '${failed.state}'`,
+                  );
+                  return;
+                }
+              }
+
+              core.info(`Attempt ${attempt}/${maxAttempts}: Preview not ready yet, sleeping…`);
+              await new Promise((r) => setTimeout(r, intervalMs));
+            }
+
+            core.setFailed(
+              `Timed out after ${maxAttempts} attempts waiting for a successful Vercel Preview deployment.`,
+            );
 
   # ─────────────────────────────────────────────────────────────────────────
   # 2) Ragas evaluation — run the 50 Q&A pairs through /api/chat on the
@@ -77,6 +134,9 @@ jobs:
           # Judge LLM. Same key as runtime, but completely separate billing
           # path — only consumed by gpt-4o-mini scoring calls.
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          # Optional: bypass Vercel Deployment Protection. If unset, the
+          # Preview must be reachable without auth.
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: |
           python eval/ragas_eval.py \
             --base-url "${{ needs.await-vercel.outputs.preview-url }}"
@@ -117,6 +177,8 @@ jobs:
       - name: Run Playwright tests against the Preview
         env:
           BASE_URL: ${{ needs.await-vercel.outputs.preview-url }}
+          # Optional: bypass Vercel Deployment Protection for E2E probes.
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: npx playwright test
 
       - name: Upload Playwright report

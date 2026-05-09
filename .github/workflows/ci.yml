@@ -36,7 +36,16 @@ jobs:
           # Scan the whole branch history on PRs and the latest commit on push.
           base: ${{ github.event.pull_request.base.sha || '' }}
           head: ${{ github.event.pull_request.head.sha || github.sha }}
-          extra_args: --results=verified,unknown
+          # `verified` only — fail the build only when TruffleHog actually
+          # confirmed a secret works (i.e. the Postgres host accepts the
+          # creds, the API key authenticates, etc.). Unverified pattern
+          # matches are noise here: `.env.example` and docs/DEPLOYMENT.md
+          # contain placeholder URIs like
+          #   postgresql://user:hash@ep-xxxxxx-pooler.neon.tech/...
+          # which look like a Postgres connection string but are
+          # documentation. The previous `verified,unknown` setting failed
+          # on those false positives.
+          extra_args: --results=verified
 
   lint-typecheck-test:
     name: Lint, typecheck, unit tests

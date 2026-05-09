@@ -9,6 +9,11 @@ import { defineConfig, devices } from '@playwright/test';
  */
 const BASE_URL = process.env.BASE_URL ?? 'http://localhost:4321';
 
+// Vercel Deployment Protection bypass. When set, every Playwright request
+// — including page navigations and SSE/fetch from inside the page — carries
+// the header so auth-walled Preview deployments are reachable in CI.
+const VERCEL_BYPASS = process.env.VERCEL_AUTOMATION_BYPASS_SECRET ?? '';
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: false,   // SSE tests can be chatty — run serially to keep logs readable
@@ -22,6 +27,12 @@ export default defineConfig({
     actionTimeout: 20_000,
     navigationTimeout: 30_000,
     trace: 'on-first-retry',
+    extraHTTPHeaders: VERCEL_BYPASS
+      ? {
+          'x-vercel-protection-bypass': VERCEL_BYPASS,
+          'x-vercel-set-bypass-cookie': 'true',
+        }
+      : undefined,
   },
 
   projects: [
