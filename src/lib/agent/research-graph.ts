@@ -146,7 +146,7 @@ function sanitizeText(value: unknown, max: number): string {
 function toSource(r: TavilyResult): Source | null {
   const url = typeof r.url === 'string' ? r.url : '';
   if (!/^https?:\/\//i.test(url)) return null; // refuse anything non-http(s)
-  let host = '';
+  let host: string;
   try {
     host = new URL(url).hostname.replace(/^www\./, '');
   } catch {
