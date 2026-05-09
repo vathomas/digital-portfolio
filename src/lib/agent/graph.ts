@@ -12,7 +12,7 @@
 import { StateGraph, Annotation, END, START } from '@langchain/langgraph';
 import { generateText } from 'ai';
 import { anthropic, CLAUDE_QUALITY } from './llm';
-import { mockRetrieve, type KnowledgeChunk } from './knowledge';
+import { retrieve as retrieveChunks, type KnowledgeChunk } from './knowledge';
 
 export type Thought =
   | { node: 'retrieve'; query: string; hits: { id: string; topic: string }[] }
@@ -43,8 +43,9 @@ const MAX_ATTEMPTS = 2;
 /* ────────────────────────── Nodes ────────────────────────── */
 
 async function retrieve(state: typeof AgentState.State) {
-  // Swap for Neon pgvector cosine search once DATABASE_URL is provisioned.
-  const hits = mockRetrieve(state.query, 3);
+  // Real mode: pgvector + OpenAI embeddings. Falls back to keyword overlap
+  // when DATABASE_URL or OPENAI_API_KEY is absent (local dev / unconfigured).
+  const hits = await retrieveChunks(state.query, 3);
   return {
     context: hits,
     thoughts: [
