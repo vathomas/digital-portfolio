@@ -8,11 +8,12 @@ configDotenv({ override: true });
 import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import tailwindcss from '@tailwindcss/vite';
-import node from '@astrojs/node';
+import vercel from '@astrojs/vercel';
 
 export default defineConfig({
   output: 'server',
-  adapter: node({ mode: 'standalone' }),
+  adapter: vercel({ webAnalytics: { enabled: true } }),
+  site: 'https://thomas-abraham.vercel.app',
   integrations: [react()],
   vite: {
     plugins: [tailwindcss()],

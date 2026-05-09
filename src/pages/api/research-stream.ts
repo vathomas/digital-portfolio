@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { runResearch } from '../../lib/agent/research-graph';
 import { saveReport } from '../../lib/agent/research-store';
+import { isValidReportId } from '../../lib/agent/id';
 
 export const prerender = false;
 
@@ -22,6 +23,9 @@ export const GET: APIRoute = async ({ request }) => {
   }
   if (topic.length > 500) {
     return new Response('topic must be 500 characters or fewer', { status: 400 });
+  }
+  if (!isValidReportId(id)) {
+    return new Response('id must match [A-Za-z0-9_-]{8,64}', { status: 400 });
   }
 
   const encoder = new TextEncoder();
@@ -47,7 +51,7 @@ export const GET: APIRoute = async ({ request }) => {
         }
 
         if (result) {
-          saveReport(result);
+          await saveReport(result);
           send('complete', {
             id: result.id,
             cost: result.cost,
