@@ -11,7 +11,11 @@
     "preview": "astro preview",
     "astro": "astro",
     "seed": "tsx scripts/seed-corpus.ts",
-    "og": "node scripts/generate-og.mjs"
+    "og": "node scripts/generate-og.mjs",
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "astro check",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.76",
@@ -37,9 +41,18 @@
     "tailwindcss": "^4.2.4"
   },
   "devDependencies": {
+    "@astrojs/check": "^0.9.9",
+    "@eslint/js": "^10.0.1",
     "@resvg/resvg-js": "^2.6.2",
     "@types/pg": "^8.20.0",
+    "@vitest/coverage-v8": "^4.1.5",
     "dotenv": "^17.4.2",
-    "tsx": "^4.21.0"
+    "eslint": "^10.3.0",
+    "eslint-plugin-astro": "^1.7.0",
+    "globals": "^17.6.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.59.2",
+    "vitest": "^4.1.5"
   }
 }
