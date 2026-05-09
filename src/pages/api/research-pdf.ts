@@ -17,7 +17,7 @@ export const GET: APIRoute = async ({ request }) => {
     return new Response('id query param is required', { status: 400 });
   }
 
-  const report = getReport(id);
+  const report = await getReport(id);
   if (!report) {
     return new Response('Report not found or expired', { status: 404 });
   }

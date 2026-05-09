@@ -47,7 +47,7 @@ export const GET: APIRoute = async ({ request }) => {
         }
 
         if (result) {
-          saveReport(result);
+          await saveReport(result);
           send('complete', {
             id: result.id,
             cost: result.cost,
