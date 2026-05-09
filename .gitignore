@@ -28,3 +28,9 @@ pnpm-debug.log*
 
 # local Claude Code tooling
 .claude/
+
+# Playwright + Ragas eval artefacts (uploaded to GitHub Actions, not committed)
+playwright-report/
+test-results/
+eval/results.json
+
