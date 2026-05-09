@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { getReport } from '../../lib/agent/research-store';
 import { buildReportPdf } from '../../lib/agent/pdf-builder';
+import { isValidReportId } from '../../lib/agent/id';
 
 export const prerender = false;
 
@@ -16,8 +17,11 @@ export const GET: APIRoute = async ({ request }) => {
   if (!id) {
     return new Response('id query param is required', { status: 400 });
   }
+  if (!isValidReportId(id)) {
+    return new Response('id must match [A-Za-z0-9_-]{8,64}', { status: 400 });
+  }
 
-  const report = getReport(id);
+  const report = await getReport(id);
   if (!report) {
     return new Response('Report not found or expired', { status: 404 });
   }
