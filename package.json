@@ -10,12 +10,14 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "seed": "tsx scripts/seed-corpus.ts"
+    "seed": "tsx scripts/seed-corpus.ts",
+    "og": "node scripts/generate-og.mjs"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.76",
     "@ai-sdk/openai": "^3.0.63",
     "@astrojs/react": "^5.0.4",
+    "@astrojs/sitemap": "^3.7.2",
     "@astrojs/vercel": "^10.0.6",
     "@langchain/core": "^1.1.45",
     "@langchain/langgraph": "^1.3.0",
@@ -35,6 +37,7 @@
     "tailwindcss": "^4.2.4"
   },
   "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "@types/pg": "^8.20.0",
     "dotenv": "^17.4.2",
     "tsx": "^4.21.0"

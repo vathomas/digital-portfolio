@@ -4,9 +4,38 @@ import '../styles/global.css';
 interface Props {
   title: string;
   description?: string;
+  /**
+   * Path to the OG image, relative to the site root. Resolved against
+   * `Astro.site` so it ends up absolute in the rendered tag — most social
+   * platforms reject relative URLs.
+   */
+  ogImage?: string;
+  /**
+   * Override the canonical URL. Defaults to the current page's URL.
+   * Useful if you want a project page's canonical to point elsewhere.
+   */
+  canonicalUrl?: string;
 }
 
-const { title, description = 'Thomas Abraham — Full-Stack Product Engineer & Agentic AI Builder. 10+ years building scalable systems. Now building AI that thinks, acts, and self-corrects.' } = Astro.props;
+const DEFAULT_DESCRIPTION =
+  'Thomas Abraham — Full-Stack Product Engineer & Agentic AI Builder. ' +
+  '10+ years building scalable systems. Now building AI that thinks, ' +
+  'acts, and self-corrects.';
+
+const {
+  title,
+  description = DEFAULT_DESCRIPTION,
+  ogImage = '/og-default.png',
+  canonicalUrl,
+} = Astro.props;
+
+// Astro.site is set in astro.config.mjs. If it's missing for some reason,
+// fall back to a relative URL — better than throwing during render.
+const siteUrl = Astro.site;
+const ogImageAbs = siteUrl ? new URL(ogImage, siteUrl).href : ogImage;
+const canonicalAbs = canonicalUrl
+  ? canonicalUrl
+  : (siteUrl ? new URL(Astro.url.pathname, siteUrl).href : Astro.url.href);
 ---
 
 <!doctype html>
@@ -16,7 +45,24 @@ const { title, description = 'Thomas Abraham — Full-Stack Product Engineer & A
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content={description} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="canonical" href={canonicalAbs} />
     <title>{title}</title>
+
+    <!-- Open Graph (Facebook, LinkedIn, Slack, Discord, …) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalAbs} />
+    <meta property="og:image" content={ogImageAbs} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:site_name" content="tvabraham.dev" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageAbs} />
   </head>
   <body class="bg-gray-950 text-gray-100 min-h-screen font-sans antialiased">
     <header class="border-b border-gray-800 px-6 py-4 sticky top-0 z-50 bg-gray-950/90 backdrop-blur">
