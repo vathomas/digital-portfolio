@@ -96,6 +96,20 @@ def load_questions(path: str) -> list[dict]:
     return questions
 
 
+def build_headers() -> dict:
+    """
+    Build HTTP headers for chat API calls.
+    Includes Vercel's Deployment Protection bypass header when available so
+    auth-walled Preview deployments are reachable from CI.
+    """
+    headers = {"Content-Type": "application/json"}
+    bypass = os.environ.get("VERCEL_AUTOMATION_BYPASS_SECRET", "").strip()
+    if bypass:
+        headers["x-vercel-protection-bypass"] = bypass
+        headers["x-vercel-set-bypass-cookie"] = "true"
+    return headers
+
+
 def call_chat_api(base_url: str, question: str) -> dict | None:
     """
     POST /api/chat and return the parsed JSON body.
@@ -103,6 +117,7 @@ def call_chat_api(base_url: str, question: str) -> dict | None:
     """
     url = base_url.rstrip("/") + "/api/chat"
     payload = {"message": question}
+    headers = build_headers()
 
     for attempt in range(1, MAX_RETRIES + 1):
         try:
@@ -110,7 +125,7 @@ def call_chat_api(base_url: str, question: str) -> dict | None:
                 url,
                 json=payload,
                 timeout=REQUEST_TIMEOUT_S,
-                headers={"Content-Type": "application/json"},
+                headers=headers,
             )
             resp.raise_for_status()
             return resp.json()
