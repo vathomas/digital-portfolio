@@ -1,7 +1,13 @@
 /**
- * Mock knowledge corpus — stands in for pgvector retrieval until Neon is wired.
- * Each chunk is what a real similarity search would return; the mock retriever
- * picks chunks by keyword overlap so the demo behaves plausibly.
+ * Knowledge corpus and retrieval for the Recursive Portfolio Chatbot.
+ *
+ * Real mode: `retrieve()` runs a pgvector cosine-similarity search against
+ * the `corpus_chunks` table seeded by `scripts/seed-corpus.ts`. Embeddings
+ * are produced with OpenAI text-embedding-3-small (1536 dims).
+ *
+ * Mock mode (no DATABASE_URL or no OPENAI_API_KEY): `mockRetrieve()` does a
+ * keyword-overlap fallback over the in-memory CORPUS so `npm run dev` still
+ * answers plausibly without provisioning Neon.
  *
  * Sources: CV V1 (relocating Adelaide, June 2026) + Repo Analysis writeup.
  */
@@ -106,8 +112,84 @@ export const CORPUS: KnowledgeChunk[] = [
 ];
 
 /**
+ * Real retriever — embed the query with OpenAI, then cosine-similarity search
+ * against the seeded `corpus_chunks` table. Returns top-k chunks ordered most
+ * similar first. Throws if the database or embedding provider is misconfigured;
+ * `retrieve()` wraps this with the mock fallback.
+ *
+ * The embedding is sent as a text literal cast to `vector` rather than a
+ * parameterised array — pgvector accepts the `[0.1,0.2,...]` text format and
+ * this avoids needing a custom node-postgres type registration. The whole
+ * vector goes through as a parameter, so this is not concatenated SQL.
+ */
+/** Defensive cap on per-call embedding input size (chars, not tokens). */
+const EMBED_INPUT_MAX = 4000;
+
+export async function pgvectorRetrieve(query: string, k = 3): Promise<KnowledgeChunk[]> {
+  const { embed } = await import('ai');
+  const { openai, EMBED_MODEL } = await import('./llm');
+  const { getPool } = await import('../db');
+
+  // Defence in depth: even though the API route caps message length, this
+  // function is exported and a future caller may forget the limit. Truncate
+  // here to bound the OpenAI bill and the embedding latency.
+  let input = query;
+  if (input.length > EMBED_INPUT_MAX) {
+    console.warn('[knowledge] truncating embedding input', {
+      from: input.length,
+      to: EMBED_INPUT_MAX,
+    });
+    input = input.slice(0, EMBED_INPUT_MAX);
+  }
+
+  const { embedding } = await embed({
+    model: openai.embedding(EMBED_MODEL),
+    value: input,
+  });
+
+  // Defence in depth: refuse to round-trip non-finite values to Postgres.
+  // pgvector would reject them with a confusing error; failing fast here is
+  // cleaner and removes any chance that a future provider regression leaks
+  // unsanitised content into the SQL literal.
+  if (!Array.isArray(embedding) || !embedding.every(Number.isFinite)) {
+    throw new Error('embedding contained non-finite values');
+  }
+
+  const embedLiteral = `[${embedding.join(',')}]`;
+  const pool = getPool();
+  const { rows } = await pool.query<KnowledgeChunk>(
+    `SELECT id, source, topic, text
+       FROM corpus_chunks
+       ORDER BY embedding <=> $1::vector
+       LIMIT $2`,
+    [embedLiteral, k],
+  );
+  return rows;
+}
+
+/**
+ * Unified retrieval entrypoint. Uses pgvector when both DATABASE_URL and
+ * OPENAI_API_KEY are set; otherwise falls back to keyword overlap so local
+ * dev and unconfigured deploys still produce reasonable answers.
+ */
+export async function retrieve(query: string, k = 3): Promise<KnowledgeChunk[]> {
+  if (process.env.DATABASE_URL && process.env.OPENAI_API_KEY) {
+    try {
+      return await pgvectorRetrieve(query, k);
+    } catch (err) {
+      console.error('[knowledge] pgvector retrieve failed, falling back to mock', {
+        message: err instanceof Error ? err.message : String(err),
+      });
+      return mockRetrieve(query, k);
+    }
+  }
+  return mockRetrieve(query, k);
+}
+
+/**
  * Mock retriever — keyword overlap stand-in for cosine similarity over pgvector.
- * Replace with a real Neon + pgvector query when DATABASE_URL is configured.
+ * Used when DATABASE_URL or OPENAI_API_KEY is missing, and as the fallback
+ * path when pgvectorRetrieve throws at runtime.
  */
 export function mockRetrieve(query: string, k = 3): KnowledgeChunk[] {
   const terms = query
