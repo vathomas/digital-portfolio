@@ -165,5 +165,8 @@ export async function askPortfolioAgent(question: string) {
     answer: result.answer,
     thoughts: result.thoughts,
     attempts: result.attempts,
+    // Expose retrieved context texts so callers (e.g. the Ragas eval script)
+    // can compute context_precision and context_recall without re-querying.
+    contexts: (result.context as KnowledgeChunk[]).map((c) => c.text),
   };
 }

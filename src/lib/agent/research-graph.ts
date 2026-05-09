@@ -110,46 +110,131 @@ async function* planNode(
   return subQuestions;
 }
 
+/* ────────────────────────── Tavily ────────────────────────── */
+
+interface TavilyResult {
+  title?: string;
+  url?: string;
+  content?: string;
+  published_date?: string;
+}
+
+interface TavilyResponse {
+  results?: TavilyResult[];
+}
+
+const TAVILY_TIMEOUT_MS = 12_000;
+const TAVILY_QUERY_MAX = 400;
+
+/**
+ * Strip C0/C1 control characters and collapse whitespace runs.
+ * Untrusted upstream content (Tavily fetches arbitrary web pages) can carry
+ * NULs, ANSI escapes, and surrogate halves that corrupt logs, the PDF
+ * renderer, or downstream LLM prompts. Capped to `max` chars after cleaning.
+ */
+function sanitizeText(value: unknown, max: number): string {
+  const s = typeof value === 'string' ? value : '';
+  return s
+    // C0 (0x00–0x1F except \t \n) and C1 (0x7F–0x9F)
+    .replace(/\p{Cc}/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, max);
+}
+
+/** Format a Tavily result row into our internal Source shape. */
+function toSource(r: TavilyResult): Source | null {
+  const url = typeof r.url === 'string' ? r.url : '';
+  if (!/^https?:\/\//i.test(url)) return null; // refuse anything non-http(s)
+  let host: string;
+  try {
+    host = new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return null;
+  }
+  const date = (r.published_date ?? '').slice(0, 10); // YYYY-MM-DD or ''
+  const citation = date ? `${host} · ${date} · ${url}` : `${host} · ${url}`;
+  return {
+    title: sanitizeText(r.title, 200) || host,
+    citation,
+    // Cap finding length so a misbehaving result can't bloat the LLM context
+    // window for the downstream factcheck/summarize calls.
+    finding: sanitizeText(r.content, 600),
+  };
+}
+
+async function tavilySearch(query: string, apiKey: string): Promise<Source[]> {
+  // Defensive query cap — sub-questions come from planNode (LLM), so they're
+  // bounded today, but a future caller could pass a 100k-char string and
+  // burn the Tavily quota.
+  const q = query.length > TAVILY_QUERY_MAX ? query.slice(0, TAVILY_QUERY_MAX) : query;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), TAVILY_TIMEOUT_MS);
+
+  try {
+    const res = await fetch('https://api.tavily.com/search', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        query: q,
+        max_results: 5,
+        include_raw_content: false,
+        search_depth: 'basic',
+      }),
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      throw new Error(`Tavily HTTP ${res.status}`);
+    }
+    const data = (await res.json()) as TavilyResponse;
+    if (!Array.isArray(data.results)) return [];
+    return data.results
+      .map(toSource)
+      .filter((s): s is Source => s !== null)
+      .slice(0, 3);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function* searchNode(
   topic: string,
   subQuestion: string,
   idx: number,
   toks: Record<string, number>,
 ): AsyncGenerator<Thought, Source[]> {
-  yield t('search', 'action', `Searching literature for: "${subQuestion}"`);
-  await sleep(200);
-  yield t('search', 'thought', `Filtering results by recency and citation count…`);
+  void topic;
+  yield t('search', 'action', `Searching the web for: "${subQuestion}"`);
+  await sleep(150);
 
-  const { text, usage } = await generateText({
-    model: anthropic(CLAUDE_FAST),
-    system:
-      'Generate 3 realistic academic/industry research sources for the given sub-question. ' +
-      'Sources must look like real publications with plausible author names, venues, and years. ' +
-      'Return ONLY a JSON array with exactly 3 objects: ' +
-      '[{"title":"...","citation":"Author et al. Venue Year","finding":"1-2 sentence insight directly relevant to the sub-question"}]',
-    prompt: `Topic: "${topic}"\nSub-question: "${subQuestion}"`,
-  });
+  const apiKey = process.env.TAVILY_API_KEY;
+  let sources: Source[] = [];
 
-  toks.search += usage?.totalTokens ?? 0;
-
-  let sources: Source[];
-  try {
-    const raw = text.trim().replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      sources = parsed.map((s: Record<string, string>) => ({
-        title: String(s.title ?? ''),
-        citation: String(s.citation ?? ''),
-        finding: String(s.finding ?? ''),
-      }));
-    } else {
-      throw new Error('Invalid shape');
+  if (apiKey) {
+    yield t('search', 'thought', 'Querying Tavily and filtering by relevance score…');
+    try {
+      sources = await tavilySearch(subQuestion, apiKey);
+      // Tavily basic search ≈ $0.008 per call. Counted separately from
+      // LLM tokens so costNode can apply the right unit price.
+      toks.tavilyCalls = (toks.tavilyCalls ?? 0) + 1;
+    } catch (err) {
+      console.error('[research-graph] Tavily search failed, falling back', {
+        message: err instanceof Error ? err.message : String(err),
+      });
     }
-  } catch {
+  } else {
+    yield t('search', 'thought', 'TAVILY_API_KEY unset — using offline source stubs.');
+  }
+
+  if (sources.length === 0) {
     sources = fallbackSourcesFor(topic, subQuestion);
   }
 
-  yield t('search', 'success', `Found ${sources.length} high-signal sources for sub-question ${idx + 1}.`);
+  yield t('search', 'success', `Found ${sources.length} sources for sub-question ${idx + 1}.`);
   for (const s of sources) yield t('search', 'observation', `  ↳ ${s.citation}`);
   return sources;
 }
@@ -220,15 +305,24 @@ async function* costNode(
 ): AsyncGenerator<Thought, ResearchReport['cost']> {
   yield t('cost', 'thought', `Tallying token usage and dollar cost…`);
 
-  // GPT-4o-mini: $0.15/1M in, $0.60/1M out (approx blended $0.30/1M)
-  // Claude Sonnet: $3.00/1M in, $15.00/1M out (approx blended $6.00/1M)
-  // Rough split: plan/search/factcheck = claude-haiku, summarize = claude-sonnet
-  const miniTokens = (tokenCounts.plan ?? 0) + (tokenCounts.search ?? 0) + (tokenCounts.factcheck ?? 0);
+  // Claude Haiku 4.5: ~$1/1M in, ~$5/1M out — blended ≈ $2/1M.
+  // Claude Sonnet 4.5: ~$3/1M in, ~$15/1M out — blended ≈ $6/1M.
+  // Tavily basic search: ~$0.008 per call.
+  // Token bucket layout: plan/search/factcheck → Haiku; summarize → Sonnet.
+  const haikuTokens = (tokenCounts.plan ?? 0) + (tokenCounts.search ?? 0) + (tokenCounts.factcheck ?? 0);
   const sonnetTokens = tokenCounts.summarize ?? 0;
-  const usd = (miniTokens / 1_000_000) * 0.30 + (sonnetTokens / 1_000_000) * 6.00;
-  const totalTokens = Object.values(tokenCounts).reduce((a, b) => a + b, 0);
+  const tavilyCalls = tokenCounts.tavilyCalls ?? 0;
+  const llmCost = (haikuTokens / 1_000_000) * 2.0 + (sonnetTokens / 1_000_000) * 6.0;
+  const tavilyCost = tavilyCalls * 0.008;
+  const usd = llmCost + tavilyCost;
+  // tavilyCalls is a count, not tokens — exclude from the token total.
+  const totalTokens = haikuTokens + sonnetTokens;
 
-  yield t('cost', 'success', `Cost: $${usd.toFixed(4)} · Tokens: ${totalTokens.toLocaleString()} · Duration: ${(durationMs / 1000).toFixed(1)}s`);
+  yield t(
+    'cost',
+    'success',
+    `Cost: $${usd.toFixed(4)} · Tokens: ${totalTokens.toLocaleString()} · Tavily: ${tavilyCalls} · ${(durationMs / 1000).toFixed(1)}s`,
+  );
 
   return {
     usd: Number(usd.toFixed(4)),

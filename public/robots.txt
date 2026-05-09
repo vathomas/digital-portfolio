@@ -1,0 +1,7 @@
+# Allow all crawlers; disallow the API surface so reranker bots and
+# scrapers don't burn the LLM budget by hammering the SSE endpoints.
+User-agent: *
+Allow: /
+Disallow: /api/
+
+Sitemap: https://thomas-abraham.vercel.app/sitemap-index.xml

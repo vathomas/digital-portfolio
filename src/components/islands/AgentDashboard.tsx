@@ -140,12 +140,14 @@ function ScatterModelChart() {
             fontSize: 12,
           }}
           labelStyle={{ color: '#fff' }}
-          formatter={(v: number, name: string) => {
+          /* recharts v3 widened ValueType — keep our narrow handler shape;
+             the runtime contract (number in, ReactNode out) is correct. */
+          formatter={((v: number, name: string) => {
             if (name === 'Latency') return `${v}ms`;
             if (name === 'Success') return `${v}%`;
             if (name === 'Runs') return v.toLocaleString();
             return v;
-          }}
+          }) as never}
           labelFormatter={(_, payload) => {
             const d = payload?.[0]?.payload as { name?: string };
             return d?.name ?? '';
@@ -193,14 +195,14 @@ function ToolAccuracyChart() {
             borderRadius: 8,
             fontSize: 12,
           }}
-          formatter={(v: number, name: string, entry) => {
+          formatter={((v: number, name: string, entry: { payload: unknown }) => {
             const p = entry.payload as { invocations: number; failed: number };
             if (name === 'accuracy') return [`${v}% (${p.invocations - p.failed}/${p.invocations})`, 'Accuracy'];
             return v;
-          }}
+          }) as never}
         />
         <Bar dataKey="accuracy" fill="#22c55e" radius={[0, 4, 4, 0]}>
-          <LabelList dataKey="accuracy" position="right" fill="#9ca3af" fontSize={11} formatter={(v: number) => `${v}%`} />
+          <LabelList dataKey="accuracy" position="right" fill="#9ca3af" fontSize={11} formatter={((v: number) => `${v}%`) as never} />
         </Bar>
       </BarChart>
     </ResponsiveContainer>
