@@ -1,0 +1,90 @@
+---
+/**
+ * Ragas evaluation summary tile group.
+ *
+ * Renders four metric tiles (faithfulness / answer relevancy / context
+ * precision / context recall) with a horizontal score bar coloured by a
+ * three-step threshold:
+ *   ≥ 0.80 → green   (publishable)
+ *   ≥ 0.60 → yellow  (needs work)
+ *   < 0.60 → red     (don't ship)
+ *
+ * `preliminary: true` swaps in a yellow badge and a footer note so the
+ * placeholder values don't masquerade as a real eval — the CI gate
+ * (Phase 3 Step 8b) overwrites them when the suite runs against the
+ * live preview URL.
+ */
+
+interface Props {
+  ragas: {
+    faithfulness:      number;
+    answer_relevancy:  number;
+    context_precision: number;
+    context_recall:    number;
+    evaluatedAt:       Date;
+    questionCount:     number;
+    preliminary?:      boolean;
+  };
+}
+
+const { ragas } = Astro.props;
+
+const tiles: { label: string; score: number }[] = [
+  { label: 'Faithfulness',      score: ragas.faithfulness },
+  { label: 'Answer relevancy',  score: ragas.answer_relevancy },
+  { label: 'Context precision', score: ragas.context_precision },
+  { label: 'Context recall',    score: ragas.context_recall },
+];
+
+function barColor(score: number): string {
+  if (score >= 0.80) return 'bg-agent-500';
+  if (score >= 0.60) return 'bg-yellow-500';
+  return 'bg-red-500';
+}
+
+const evalDate = ragas.evaluatedAt.toISOString().slice(0, 10);
+---
+
+<section
+  class="border border-gray-800 rounded-lg p-5 mt-6 bg-gray-900/40"
+  aria-labelledby="ragas-heading"
+>
+  <header class="flex items-center justify-between mb-4">
+    <h2 id="ragas-heading" class="text-sm font-mono text-agent-400 uppercase tracking-wider">
+      Ragas evaluation
+    </h2>
+    {ragas.preliminary && (
+      <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-yellow-900/40 text-yellow-400 border border-yellow-700">
+        PRELIMINARY
+      </span>
+    )}
+  </header>
+
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    {tiles.map(({ label, score }) => (
+      <div>
+        <div class="text-xs text-gray-500">{label}</div>
+        <div class="text-2xl font-mono text-white mt-1 tabular-nums">
+          {score.toFixed(2)}
+        </div>
+        <div
+          class="h-1 bg-gray-800 rounded mt-2 overflow-hidden"
+          role="progressbar"
+          aria-valuenow={score}
+          aria-valuemin="0"
+          aria-valuemax="1"
+          aria-label={label}
+        >
+          <div class={`h-full ${barColor(score)}`} style={`width: ${(score * 100).toFixed(0)}%`} />
+        </div>
+      </div>
+    ))}
+  </div>
+
+  <footer class="text-xs text-gray-500 mt-4">
+    Evaluated {evalDate} · n = {ragas.questionCount}
+    {ragas.preliminary && (
+      <span class="text-yellow-500/80"> · placeholder pending CI eval gate</span>
+    )}
+  </footer>
+</section>

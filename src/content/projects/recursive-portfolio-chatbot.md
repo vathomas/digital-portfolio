@@ -6,6 +6,17 @@ agentLogicType: "Self-Correcting"
 status: "wip"
 publishedAt: 2025-06-01
 featured: true
+# Ragas scores are placeholders until the CI eval gate (Phase 3 Step 8b)
+# runs the suite against the live preview URL and overwrites these values.
+# The shape and the UI rendering are the deliverable here.
+ragas:
+  faithfulness: 0.91
+  answer_relevancy: 0.88
+  context_precision: 0.85
+  context_recall: 0.79
+  evaluatedAt: 2026-05-09
+  questionCount: 50
+  preliminary: true
 ---
 
 An "About Me" page on steroids. Instead of a static bio, visitors chat with an agent that retrieves context from my resume, GitHub activity, and project descriptions.
