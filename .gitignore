@@ -34,3 +34,38 @@ playwright-report/
 test-results/
 eval/results.json
 
+# Terraform — Infrastructure as Code
+# CRITICAL: Never commit real values, API keys, or tokens
+infra/terraform/.terraform/
+infra/terraform/.terraform.lock.hcl
+infra/terraform/terraform.tfstate
+infra/terraform/terraform.tfstate.backup
+infra/terraform/*.tfstate*
+infra/terraform/.env
+
+# Real values — NEVER commit (gitignore comments must live on their own line:
+# inline `# ...` comments become part of the pattern and silently break matching)
+infra/terraform/terraform.tfvars
+infra/terraform/*.tfvars
+
+# Allow example file to be committed (shows structure, no real values)
+!infra/terraform/terraform.tfvars.example
+
+# Terraform plan binaries (may include sensitive plan output)
+infra/terraform/tfplan
+infra/terraform/*.tfplan
+
+# Terraform Cloud credentials
+~/.terraform.d/
+.terraform/credentials.tfrc.json
+
+# IDE/Editor files in terraform directory
+infra/terraform/.vscode/
+infra/terraform/.idea/
+infra/terraform/*.swp
+infra/terraform/*.swo
+
+# HashiCorp Sentinel (policy as code / local mocks)
+*.sentinel
+**/sentinel-mocks/
+

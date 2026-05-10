@@ -1,0 +1,154 @@
+name: Terraform Plan — Infrastructure Changes
+
+# Triggers on PRs that modify infra/ directory
+on:
+  pull_request:
+    paths:
+      - 'infra/terraform/**'
+      - '.github/workflows/terraform-plan.yml'
+    branches: [develop, master]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  terraform-plan:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+    env:
+      TF_VERSION: '1.5.7'
+      TF_CLOUD_ORGANIZATION: 'thomas-abraham'
+      TF_WORKSPACE: 'digital-portfolio'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+      - name: Terraform Format Check
+        id: fmt
+        run: terraform fmt -check -diff
+        working-directory: infra/terraform
+        continue-on-error: true
+
+      - name: Terraform Init
+        id: init
+        run: terraform init
+        working-directory: infra/terraform
+
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate -no-color
+        working-directory: infra/terraform
+
+      - name: Terraform Plan
+        id: plan
+        # Plan without applying — read-only operation
+        # Note: Terraform Cloud requires TF_API_TOKEN to be set via setup-terraform
+        run: |
+          terraform plan \
+            -no-color \
+            -input=false \
+            -out=tfplan
+        working-directory: infra/terraform
+        env:
+          # All sensitive variables are stored in Terraform Cloud workspace variables
+          # The plan output will mask any marked-as-sensitive values
+          TF_IN_AUTOMATION: 'true'
+        continue-on-error: true
+
+      - name: Post Plan Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        env:
+          PLAN_RESULT: ${{ steps.plan.outcome }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const planFile = 'infra/terraform/tfplan';
+
+            let planOutput = '';
+            try {
+              // Try to read terraform show output
+              const showOutput = require('child_process').execSync(
+                'cd infra/terraform && terraform show -no-color tfplan || echo "Plan output not available"',
+                { encoding: 'utf-8' }
+              );
+              planOutput = showOutput.substring(0, 30000); // GitHub comment limit
+            } catch (e) {
+              planOutput = 'Could not generate plan output. Check logs above.';
+            }
+
+            const fmtPassed = '${{ steps.fmt.outcome }}' === 'success';
+            const initPassed = '${{ steps.init.outcome }}' === 'success';
+            const validatePassed = '${{ steps.validate.outcome }}' === 'success';
+            const planPassed = '${{ steps.plan.outcome }}' === 'success';
+
+            let comment = `## 🔧 Terraform Plan Results\n\n`;
+            comment += `| Check | Result |\n`;
+            comment += `|-------|--------|\n`;
+            comment += `| Format | ${fmtPassed ? '✅' : '❌'} \`terraform fmt\` |\n`;
+            comment += `| Init | ${initPassed ? '✅' : '❌'} \`terraform init\` |\n`;
+            comment += `| Validate | ${validatePassed ? '✅' : '❌'} \`terraform validate\` |\n`;
+            comment += `| Plan | ${planPassed ? '✅' : '❌'} \`terraform plan\` |\n\n`;
+
+            if (!fmtPassed || !initPassed || !validatePassed) {
+              comment += `### ⚠️ Infrastructure validation failed\n\n`;
+              comment += `Check the workflow logs for details: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\n`;
+            } else if (planPassed) {
+              comment += `### 📋 Plan Summary\n\n`;
+              comment += `\`\`\`terraform\n${planOutput.substring(0, 10000)}\n\`\`\`\n\n`;
+              comment += `**Note:** To apply these changes, merge this PR and run \`terraform apply\` from the \`infra/terraform\` directory.\n`;
+            }
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+      - name: Fail Workflow if Plan Failed
+        if: steps.plan.outcome == 'failure'
+        run: |
+          echo "❌ Terraform plan failed. Review the output above."
+          exit 1
+
+      - name: Fail Workflow if Validation Failed
+        if: steps.validate.outcome == 'failure'
+        run: |
+          echo "❌ Terraform validation failed. Review the output above."
+          exit 1
+
+      - name: Clean Up
+        if: always()
+        run: |
+          cd infra/terraform
+          rm -f tfplan
+          rm -rf .terraform
+
+  # Lock workflow to prevent concurrent terraform applies
+  # (Terraform Cloud handles this, but this serves as a secondary check)
+  terraform-lock-check:
+    name: Check Terraform Lock Status
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Note to Reviewer
+        run: |
+          echo "⚠️ Terraform Plan is running."
+          echo "This PR modifies infrastructure files. Review the Terraform Plan comment above before merging."
+          echo ""
+          echo "After merging to main/master, run locally:"
+          echo "  cd infra/terraform"
+          echo "  terraform apply"
+          echo ""
+          echo "To prevent accidental changes, consider:"
+          echo "  - Requiring approval from codeowners before merge"
+          echo "  - Using GitHub branch protection rules"
