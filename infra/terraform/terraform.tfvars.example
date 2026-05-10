@@ -1,0 +1,131 @@
+# Terraform Variables - Example File
+#
+# NEVER commit actual values to this repository.
+# Copy this file to `terraform.tfvars` and fill in real values.
+#
+# terraform.tfvars is in .gitignore and will not be committed.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SENSITIVE TOKENS & API KEYS (keep in terraform.tfvars, never in version control)
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Vercel API Token - Get from https://vercel.com/account/tokens
+# Required scopes: read + write
+vercel_api_token = "vercel_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+
+# Neon API Key - Get from https://console.neon.tech/app/settings/api-keys
+# Scope: Full access
+neon_api_key = "neon_api_key_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+
+# GitHub Personal Access Token - Get from https://github.com/settings/tokens
+# Scopes needed: repo (full control of repositories), admin:repo_hook
+github_token = "ghp_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+
+# Anthropic Claude API Key - Get from https://console.anthropic.com/account/keys
+anthropic_api_key = "sk-ant-v7-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+
+# OpenAI API Key - Get from https://platform.openai.com/api-keys
+# Used for embeddings (text-embedding-3-small) and Ragas judge LLM
+openai_api_key = "sk-proj-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+
+# Tavily Web Search API Key - Get from https://tavily.com/dashboard
+tavily_api_key = "tvly-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+
+# OpenWeather API Key - Get from https://openweathermap.org/api
+openweathermap_api_key = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+
+# Neon Postgres Connection String - Pooled for serverless
+# Get from: https://console.neon.tech → Project → Connection String → Pooled
+# Format: postgresql://username:password@ep-xxxxxx-pooler.neon.tech/dbname?sslmode=require
+database_url = "postgresql://portfolio_app:YOUR_NEON_PASSWORD_HERE@ep-xxxxxxx-pooler.neon.tech/portfolio?sslmode=require"
+
+# Vercel Blob Storage Token - Auto-created by Vercel
+# Get from: Vercel Dashboard → Project → Storage → Blob → Click the bucket → Token
+blob_read_write_token = "vercel_blob_rw_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+
+# Vercel Deployment Protection Bypass Secret
+# Get from: Vercel Dashboard → Project Settings → Deployment Protection →
+#           Protection Bypass for Automation → Add Secret
+# Exactly 32 characters (Vercel requirement for automation bypass)
+vercel_automation_bypass_secret = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GITHUB ACTIONS SECRETS (may differ from above — set separately if needed)
+# ─────────────────────────────────────────────────────────────────────────────
+
+# OpenAI key for GitHub Actions Ragas judge LLM
+# (Can be same as openai_api_key above, or a different key)
+github_actions_openai_key = "sk-proj-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+
+# Vercel token for GitHub Actions deployments
+# (Can be same as vercel_api_token above, or a different token)
+github_actions_vercel_token = "vercel_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+
+# Vercel bypass secret for GitHub Actions CI
+# (Can be same as vercel_automation_bypass_secret above)
+github_actions_bypass_secret = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# NON-SENSITIVE CONFIGURATION (can be modified as needed)
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Vercel project name
+vercel_project_name = "digital-portfolio"
+
+# Vercel team slug or team ID (leave empty for Hobby; Team Settings in dashboard)
+vercel_team_id = ""
+
+# Neon project ID — Neon Console → project → Settings → General (id looks like "spring-shape-12345678")
+neon_project_id = "your_neon_project_id"
+
+# Neon region (eu-west-1, us-east-1, etc.)
+neon_region = "eu-west-1"
+
+# GitHub repository owner (your username or org)
+github_owner = "thomas-abraham"
+
+# GitHub repository name
+github_repo = "Digital-Portfolio"
+
+# Production site URL — full https:// URL.
+# Use the custom domain (preferred) or the stable *.vercel.app alias.
+# Do NOT use a Preview slug (e.g. "*-eight-kappa.vercel.app") — those change per deploy.
+site_url = "https://thomas-abraham.vercel.app"
+
+# Custom domain — hostname only (no "https://", no trailing "/").
+# Example: "tvabraham.dev"      ✅
+#          "https://tvabraham.dev/"  ❌ (will fail validation)
+# Leave empty if not using a custom domain.
+primary_domain = ""
+
+# Vercel serverless function region (lhr1, sfo1, hnd1, etc.)
+serverless_function_region = "lhr1"
+
+# Ragas faithfulness threshold (0.0 - 1.0)
+# Stage B evaluation gates on this threshold
+ragas_faithfulness_threshold = 0.80
+
+# Vercel Blob bucket name
+blob_read_write_token_bucket = "digital-portfolio-reports"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SETUP INSTRUCTIONS
+# ─────────────────────────────────────────────────────────────────────────────
+
+# 1. Copy this file:
+#    cp terraform.tfvars.example terraform.tfvars
+#
+# 2. Edit terraform.tfvars with your real values:
+#    nano terraform.tfvars  (or your editor)
+#
+# 3. Initialize Terraform:
+#    terraform init
+#
+# 4. Review the plan:
+#    terraform plan
+#
+# 5. Apply the configuration:
+#    terraform apply
+#
+# DO NOT commit terraform.tfvars to git — it's in .gitignore for security.
+# This file (terraform.tfvars.example) IS committed to show the structure.
