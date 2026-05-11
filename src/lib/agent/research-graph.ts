@@ -13,6 +13,7 @@
 
 import { generateText } from 'ai';
 import { anthropic, CLAUDE_QUALITY, CLAUDE_FAST } from './llm';
+import { TOKEN_CAPS, WORD_BUDGETS, checkFinishReason } from './llm-caps';
 
 export type ThoughtLevel = 'info' | 'thought' | 'action' | 'observation' | 'success';
 
@@ -82,8 +83,10 @@ async function* planNode(
     model: anthropic(CLAUDE_FAST),
     system:
       'You are a research planner. Generate exactly 3 focused, specific research sub-questions ' +
-      'for the given topic. Return ONLY a valid JSON array of strings — no prose, no markdown.',
+      'for the given topic. Return ONLY a valid JSON array of strings — no prose, no markdown. ' +
+      `Keep each question under 25 words; total response under ${WORD_BUDGETS.researchPlan} words.`,
     prompt: `Topic: "${topic}"\n\nReturn: ["question1", "question2", "question3"]`,
+    maxOutputTokens: TOKEN_CAPS.researchPlan,
   });
 
   toks.plan += usage?.totalTokens ?? 0;
@@ -253,8 +256,9 @@ async function* factcheckNode(
     model: anthropic(CLAUDE_FAST),
     system:
       'You are a fact-checker reviewing research sources for contradictions or factual inconsistencies. ' +
-      'Be brief — 1-2 sentences maximum.',
+      `Be brief — 1-2 sentences maximum, under ${WORD_BUDGETS.researchFactcheck} words.`,
     prompt: `Sources:\n${sourceList}\n\nReport any contradictions. If none, respond exactly: "No contradictions detected."`,
+    maxOutputTokens: TOKEN_CAPS.researchFactcheck,
   });
 
   toks.factcheck += usage?.totalTokens ?? 0;
@@ -277,12 +281,13 @@ async function* summarizeNode(
     .map((s, i) => `[${i + 1}] **${s.title}** (${s.citation})\n${s.finding}`)
     .join('\n\n');
 
-  const { text, usage } = await generateText({
+  const { text, usage, finishReason } = await generateText({
     model: anthropic(CLAUDE_QUALITY),
     system:
       'You are a senior research analyst. Write a concise, professional executive summary in markdown. ' +
       'Use ## and ### headings. Write the overview in prose paragraphs (not bullet points). ' +
-      'Cite sources inline with their bracket numbers like [1], [2].',
+      'Cite sources inline with their bracket numbers like [1], [2]. ' +
+      `Keep the entire summary under ${WORD_BUDGETS.researchSummarize} words.`,
     prompt:
       `Topic: "${topic}"\n\n` +
       `Research sub-questions investigated:\n${subQuestions.map((q, i) => `${i + 1}. ${q}`).join('\n')}\n\n` +
@@ -291,9 +296,15 @@ async function* summarizeNode(
       '## Executive Summary — prose overview paragraph\n' +
       '### Key Findings — numbered list, one finding per source with citation\n' +
       '### Outlook — 2-3 sentence forward-looking conclusion',
+    maxOutputTokens: TOKEN_CAPS.researchSummarize,
   });
 
   toks.summarize += usage?.totalTokens ?? 0;
+
+  const truncationNote = checkFinishReason(finishReason, 'research.summarize');
+  if (truncationNote) {
+    yield t('summarize', 'thought', truncationNote);
+  }
 
   yield t('summarize', 'success', `Summary drafted (${text.length} chars, ${sources.length} citations).`);
   return text;
