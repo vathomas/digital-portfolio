@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import Analytics from '@vercel/analytics/astro';
 
 interface Props {
   title: string;
@@ -63,6 +64,7 @@ const canonicalAbs = canonicalUrl
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImageAbs} />
+    <Analytics />
   </head>
   <body class="bg-gray-950 text-gray-100 min-h-screen font-sans antialiased">
     <header class="border-b border-gray-800 px-6 py-4 sticky top-0 z-50 bg-gray-950/90 backdrop-blur">
