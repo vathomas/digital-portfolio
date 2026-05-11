@@ -15,6 +15,7 @@
 
 import { generateText } from 'ai';
 import { anthropic, CLAUDE_FAST } from './llm';
+import { TOKEN_CAPS, WORD_BUDGETS, checkFinishReason } from './llm-caps';
 import { makeToolRegistry, type ToolDefinition } from './playground-tools';
 
 export type StepKind = 'thought' | 'action' | 'observation' | 'answer' | 'system' | 'error';
@@ -45,7 +46,6 @@ export interface PlaygroundResult {
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const MAX_ITERATIONS = 6;
-const PLANNER_MAX_TOKENS = 600;
 const QUERY_MAX = 500;
 const OBSERVATION_PREVIEW_MAX = 800; // chars per observation when re-fed to the LLM
 
@@ -156,7 +156,8 @@ async function llmPlanNext(
     '  - To call a tool: {"thought":"<one sentence>","action":"<tool_name>","args":{...}}\n' +
     '  - To finish:      {"thought":"<one sentence>","answer":"<final answer in markdown>"}\n' +
     'Rules: choose only from the listed tools; do not call the same tool twice with the same args; ' +
-    'finalise as soon as you have enough information; keep "answer" under 400 characters.';
+    'finalise as soon as you have enough information; keep "answer" under 400 characters; ' +
+    `total response under ${WORD_BUDGETS.playgroundPlanner} words.`;
 
   const traceText = history.length === 0
     ? '(no observations yet)'
@@ -168,15 +169,20 @@ async function llmPlanNext(
 
   const prompt = `User query: "${query}"\n\nTrace so far:\n${traceText}\n\nReturn the JSON for the next step.`;
 
-  const { text, usage } = await generateText({
+  const { text, usage, finishReason } = await generateText({
     model: anthropic(CLAUDE_FAST),
     system,
     prompt,
-    // Bounded output so a misbehaving model can't run away on cost.
-    // Cast through unknown — different versions of @ai-sdk type this field
-    // slightly differently; the runtime accepts it on Anthropic.
-    ...({ maxTokens: PLANNER_MAX_TOKENS } as Record<string, unknown>),
+    // Financial guardrail — bounds worst-case cost per planner iteration.
+    // Previously cast via `as Record<string, unknown>` under the wrong key
+    // (`maxTokens`); AI SDK v6 uses `maxOutputTokens`. Now strongly typed
+    // so SDK upgrades will surface field renames at build time.
+    maxOutputTokens: TOKEN_CAPS.playgroundPlanner,
   });
+
+  // Logged via checkFinishReason for observability; the caller surfaces
+  // truncation to the user via a system step (see runPlayground).
+  checkFinishReason(finishReason, 'playground.planner');
 
   return {
     step: parsePlannerJson(text, toolNames),
