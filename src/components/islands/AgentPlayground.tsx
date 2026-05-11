@@ -52,7 +52,13 @@ export default function AgentPlayground() {
     const es = new EventSource(`/api/playground-stream?query=${encodeURIComponent(t)}`);
     sourceRef.current = es;
 
+    // EventSource can't surface a 429 — closes silently. Flag tracks whether
+    // we ever received an event so the error handler can distinguish a
+    // rate-limit reject from a mid-stream drop.
+    let receivedAny = false;
+
     es.addEventListener('step', (e) => {
+      receivedAny = true;
       try {
         const data = JSON.parse((e as MessageEvent).data) as Step;
         setSteps((prev) => [...prev, data]);
@@ -72,6 +78,11 @@ export default function AgentPlayground() {
         try {
           setError(JSON.parse(m.data).message ?? 'Stream error');
         } catch { setError('Stream error'); }
+      } else if (es.readyState === EventSource.CLOSED && !receivedAny) {
+        setError(
+          'Connection refused before any output arrived. You may be hitting rate limits ' +
+            '(10 playground runs per 10 minutes). Please wait and try again.',
+        );
       } else if (es.readyState !== EventSource.CLOSED) {
         setError('Connection lost');
       }

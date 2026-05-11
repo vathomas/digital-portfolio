@@ -47,6 +47,23 @@ export default function AgentChatWidget() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text }),
       });
+
+      // Rate-limit handled with a friendly message so users see actionable
+      // guidance instead of a parse error on the JSON envelope.
+      if (res.status === 429) {
+        const rl = (await res.json().catch(() => ({}))) as { retryAfterSec?: number };
+        const wait = rl.retryAfterSec ?? 60;
+        setTurns((t) => [
+          ...t,
+          {
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: `You're sending messages a bit fast — please wait ${wait}s and try again.`,
+          },
+        ]);
+        return;
+      }
+
       const data = (await res.json()) as {
         answer?: string;
         thoughts?: Thought[];

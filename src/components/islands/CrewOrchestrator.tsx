@@ -103,7 +103,12 @@ export default function CrewOrchestrator() {
     const es = new EventSource(url);
     sourceRef.current = es;
 
+    // Track whether any event arrived; on a 429 (rate-limit), EventSource
+    // closes immediately with no events and no status code visibility.
+    let receivedAny = false;
+
     es.addEventListener('thought', (e) => {
+      receivedAny = true;
       try {
         const data = JSON.parse((e as MessageEvent).data) as ThoughtPayload;
         setLogs((prev) => [...prev, data]);
@@ -111,6 +116,7 @@ export default function CrewOrchestrator() {
     });
 
     es.addEventListener('state', (e) => {
+      receivedAny = true;
       try {
         const data = JSON.parse((e as MessageEvent).data) as StatePayload;
         setActiveNode(data.active);
@@ -147,6 +153,11 @@ export default function CrewOrchestrator() {
           const parsed = JSON.parse(msgEvent.data);
           setError(parsed.message ?? 'Stream error');
         } catch { setError('Stream error'); }
+      } else if (es.readyState === EventSource.CLOSED && !receivedAny) {
+        setError(
+          'Connection refused before any output arrived. You may be hitting rate limits ' +
+            '(5 crew runs per hour). Please wait and try again.',
+        );
       } else if (es.readyState !== EventSource.CLOSED) {
         setError('Connection lost');
       }
