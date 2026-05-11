@@ -65,6 +65,18 @@ variable "vercel_automation_bypass_secret" {
   }
 }
 
+variable "upstash_redis_rest_url" {
+  description = "Upstash Redis REST URL for rate-limit middleware"
+  type        = string
+  sensitive   = true
+}
+
+variable "upstash_redis_rest_token" {
+  description = "Upstash Redis REST token for rate-limit middleware"
+  type        = string
+  sensitive   = true
+}
+
 variable "github_actions_openai_key" {
   description = "OpenAI key for GitHub Actions (Ragas judge LLM)"
   type        = string

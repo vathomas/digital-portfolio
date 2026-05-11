@@ -49,6 +49,9 @@ blob_read_write_token = "vercel_blob_rw_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 # Exactly 32 characters (Vercel requirement for automation bypass)
 vercel_automation_bypass_secret = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
+upstash_redis_rest_url   = "https://xxxx-xxxx-xxxxx.upstash.io"
+upstash_redis_rest_token = "AaXxYyZz..."
+
 # ─────────────────────────────────────────────────────────────────────────────
 # GITHUB ACTIONS SECRETS (may differ from above — set separately if needed)
 # ─────────────────────────────────────────────────────────────────────────────
