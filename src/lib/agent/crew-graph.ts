@@ -10,6 +10,7 @@
 
 import { generateText } from 'ai';
 import { anthropic, CLAUDE_QUALITY, CLAUDE_FAST } from './llm';
+import { TOKEN_CAPS, WORD_BUDGETS, checkFinishReason } from './llm-caps';
 import type { Language, Requirements, CodeArtifact, ReviewIssue } from './code-templates';
 
 export type AgentId = 'pm' | 'coder' | 'reviewer';
@@ -56,8 +57,10 @@ async function* productManager(prompt: string): AsyncGenerator<CrewEvent, Requir
     system:
       'You are an experienced product manager. Given a feature request, produce structured ' +
       'engineering requirements as JSON. Return ONLY valid JSON matching: ' +
-      '{"goal":"string","acceptance":["string","string","string"],"edgeCases":["string","string","string"]}',
+      '{"goal":"string","acceptance":["string","string","string"],"edgeCases":["string","string","string"]} ' +
+      `Each string under 25 words; total under ${WORD_BUDGETS.crewPm} words.`,
     prompt: `Feature request: "${prompt}"`,
+    maxOutputTokens: TOKEN_CAPS.crewPm,
   });
 
   let reqs: Requirements;
@@ -120,17 +123,24 @@ async function* coder(
       ? `\nPrevious reviewer feedback to fix:\n${feedback.map((f) => `- [${f.severity}] ${f.text}`).join('\n')}`
       : '';
 
-  const { text } = await generateText({
+  const { text, finishReason } = await generateText({
     model: anthropic(CLAUDE_QUALITY),
     system:
       `You are an expert ${language} developer. Write clean, idiomatic, production-quality code. ` +
-      `Return ONLY the code — no explanation, no markdown fences, no prose. Just raw ${language} code.`,
+      `Return ONLY the code — no explanation, no markdown fences, no prose. Just raw ${language} code. ` +
+      `Keep the implementation focused and under ~${WORD_BUDGETS.crewCoder} words of code (roughly 100-200 lines).`,
     prompt:
       `Implement: "${prompt}" in ${language}.` +
       reqBlock +
       feedbackBlock +
       `\n\nReturn only the ${language} code.`,
+    maxOutputTokens: TOKEN_CAPS.crewCoder,
   });
+
+  const coderTruncated = checkFinishReason(finishReason, 'crew.coder');
+  if (coderTruncated) {
+    yield think('coder', 'warn', coderTruncated);
+  }
 
   const code = text
     .trim()
@@ -170,10 +180,12 @@ async function* reviewer(
       'If there are significant issues, set verdict to REVISE and list them. ' +
       'If the code is correct and meets the requirements, set verdict to APPROVE. ' +
       'Return ONLY valid JSON: {"verdict":"APPROVE"|"REVISE","issues":[{"severity":"major"|"minor","text":"..."}]} ' +
-      'Issues array must be empty for APPROVE.',
+      'Issues array must be empty for APPROVE. ' +
+      `Each issue text under 25 words; total response under ${WORD_BUDGETS.crewReviewer} words.`,
     prompt:
       `Code to review:\n\`\`\`${code.language}\n${code.code}\n\`\`\`\n\n` +
       `Requirements:\n${reqBlock}`,
+    maxOutputTokens: TOKEN_CAPS.crewReviewer,
   });
 
   let review: { verdict: Verdict; issues: ReviewIssue[] };

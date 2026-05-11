@@ -13,12 +13,13 @@ import { StateGraph, Annotation, END, START } from '@langchain/langgraph';
 import { generateText } from 'ai';
 import { anthropic, CLAUDE_QUALITY } from './llm';
 import { retrieve as retrieveChunks, type KnowledgeChunk } from './knowledge';
+import { TOKEN_CAPS, WORD_BUDGETS, checkFinishReason } from './llm-caps';
 
 export type Thought =
   | { node: 'retrieve'; query: string; hits: { id: string; topic: string }[] }
   | { node: 'grade'; verdict: 'pass' | 'fail'; reason: string }
   | { node: 'rewrite'; from: string; to: string }
-  | { node: 'generate'; tokens: number };
+  | { node: 'generate'; tokens: number; truncated?: boolean };
 
 const AgentState = Annotation.Root({
   question: Annotation<string>(),
@@ -65,8 +66,10 @@ async function grade(state: typeof AgentState.State) {
     model: anthropic(CLAUDE_QUALITY),
     system:
       'You are a relevance grader. Given a question and retrieved context, decide if the context ' +
-      'adequately answers the question. Respond with exactly "YES - <brief reason>" or "NO - <brief reason>".',
+      'adequately answers the question. Respond with exactly "YES - <brief reason>" or "NO - <brief reason>". ' +
+      'Reason must be under 20 words.',
     prompt: `Question: ${state.question}\n\nContext:\n${ctxText || '(no context retrieved)'}`,
+    maxOutputTokens: TOKEN_CAPS.chatGrade,
   });
 
   const pass = text.trim().toUpperCase().startsWith('YES');
@@ -88,8 +91,10 @@ async function rewrite(state: typeof AgentState.State) {
     model: anthropic(CLAUDE_QUALITY),
     system:
       'Rewrite the given search query to be broader and more likely to retrieve relevant information ' +
-      'from a personal portfolio knowledge base about Thomas Abraham. Return only the rewritten query, nothing else.',
+      'from a personal portfolio knowledge base about Thomas Abraham. Return only the rewritten query, ' +
+      'one sentence, no preamble.',
     prompt: `Original query: "${state.query}"`,
+    maxOutputTokens: TOKEN_CAPS.chatRewrite,
   });
 
   const rewritten = text.trim();
@@ -113,19 +118,30 @@ async function generate(state: typeof AgentState.State) {
     .map((c, i) => `[${i + 1}] Source: ${c.source} / ${c.topic}\n${c.text}`)
     .join('\n\n');
 
-  const { text, usage } = await generateText({
+  const { text, usage, finishReason } = await generateText({
     model: anthropic(CLAUDE_QUALITY),
     system:
       "You are the portfolio assistant for Thomas Abraham, a Full-Stack Product Engineer specialising " +
       'in Agentic AI. Answer questions about Thomas accurately and concisely based ONLY on the provided ' +
       'context. Speak in third person. Be warm and professional. If the context does not fully cover ' +
-      "the question, say what you know and acknowledge the gap.",
+      "the question, say what you know and acknowledge the gap. " +
+      `Keep your response under ${WORD_BUDGETS.chatGenerate} words.`,
     prompt: `Context:\n${ctxBlock}\n\nQuestion: ${state.question}`,
+    maxOutputTokens: TOKEN_CAPS.chatGenerate,
   });
 
+  const truncationNote = checkFinishReason(finishReason, 'chat.generate');
+  const answer = truncationNote ? `${text}\n\n_${truncationNote}_` : text;
+
   return {
-    answer: text,
-    thoughts: [{ node: 'generate' as const, tokens: usage?.totalTokens ?? 0 }],
+    answer,
+    thoughts: [
+      {
+        node: 'generate' as const,
+        tokens: usage?.totalTokens ?? 0,
+        truncated: truncationNote !== null,
+      },
+    ],
   };
 }
 
