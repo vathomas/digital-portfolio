@@ -61,6 +61,8 @@ locals {
     "OPENWEATHERMAP_API_KEY"          = var.openweathermap_api_key
     "BLOB_READ_WRITE_TOKEN"           = var.blob_read_write_token
     "VERCEL_AUTOMATION_BYPASS_SECRET" = var.vercel_automation_bypass_secret
+    "UPSTASH_REDIS_REST_URL"          = var.upstash_redis_rest_url
+    "UPSTASH_REDIS_REST_TOKEN"        = var.upstash_redis_rest_token
   }
 
   # GitHub Actions secrets
