@@ -71,7 +71,13 @@ export default function DeepResearchAgent() {
     const es = new EventSource(url);
     sourceRef.current = es;
 
+    // Native EventSource cannot surface the 429 status — when the middleware
+    // rate-limits us, the connection closes immediately with no events. We
+    // detect this by tracking whether ANY event arrived before the close.
+    let receivedAny = false;
+
     es.addEventListener('thought', (e) => {
+      receivedAny = true;
       try {
         const data = JSON.parse((e as MessageEvent).data) as LogLine;
         setLogs((prev) => [...prev, data]);
@@ -97,7 +103,15 @@ export default function DeepResearchAgent() {
           setError('Stream error');
         }
       } else if (es.readyState === EventSource.CLOSED) {
-        // Normal close after complete — handled by complete handler
+        // Closed before any event arrived → likely a rate-limit (429) or
+        // an immediate server error. EventSource hides the status code,
+        // so we hint at the most actionable cause.
+        if (!receivedAny) {
+          setError(
+            'Connection refused before any output arrived. You may be hitting rate limits ' +
+              '(3 research requests per hour). Please wait and try again.',
+          );
+        }
       } else {
         setError('Connection lost');
       }
