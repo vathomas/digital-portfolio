@@ -36,7 +36,7 @@ const SCHEMA_DDL = `
   -- were added to this script. ADD COLUMN IF NOT EXISTS is idempotent, and
   -- the DEFAULT back-fills any existing rows so the NOT NULL constraint is
   -- always satisfiable. Without this, the INSERT ... ON CONFLICT below fails
-  -- with "column \"updated_at\" of relation \"corpus_chunks\" does not exist".
+  -- with: column "updated_at" of relation "corpus_chunks" does not exist.
   ALTER TABLE corpus_chunks
     ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now();
   ALTER TABLE corpus_chunks
