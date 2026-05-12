@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import Analytics from '@vercel/analytics/astro';
+import { APP_VERSION } from '../lib/version';
 
 interface Props {
   title: string;
@@ -103,11 +104,12 @@ const canonicalAbs = canonicalUrl
             ta.abraham@outlook.com
           </a>
         </div>
-        <div class="flex gap-5 text-sm text-gray-500">
+        <div class="flex items-center gap-5 text-sm text-gray-500">
           <a href="https://www.linkedin.com/in/tvabraham" target="_blank" rel="noopener"
              class="hover:text-agent-400 transition-colors">LinkedIn</a>
           <a href="/about" class="hover:text-agent-400 transition-colors">About</a>
           <a href="/certifications" class="hover:text-agent-400 transition-colors">Certifications</a>
+          <span class="text-xs text-gray-600 font-mono" title="build version">{APP_VERSION}</span>
         </div>
       </div>
     </footer>
