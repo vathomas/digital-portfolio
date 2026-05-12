@@ -24,7 +24,7 @@ test.describe('Chat widget (/about)', () => {
     await input.press('Enter');
 
     // Wait up to 30 s for an assistant message to appear — covers real LLM latency
-    const assistantMsg = page.locator('.prose, [class*="assistant"]').first();
+    const assistantMsg = page.locator('[data-role="assistant"]').first();
     await expect(assistantMsg).toBeVisible({ timeout: 30_000 });
     const text = await assistantMsg.innerText();
     expect(text.trim().length).toBeGreaterThan(20);
@@ -38,7 +38,7 @@ test.describe('Chat widget (/about)', () => {
     await input.press('Enter');
 
     // Enable the "See Thoughts" toggle once a reply is visible
-    const assistantMsg = page.locator('.prose, [class*="assistant"]').first();
+    const assistantMsg = page.locator('[data-role="assistant"]').first();
     await expect(assistantMsg).toBeVisible({ timeout: 30_000 });
 
     const toggle = page.getByLabel('🧠 See Thoughts').or(page.getByText('🧠 See Thoughts'));

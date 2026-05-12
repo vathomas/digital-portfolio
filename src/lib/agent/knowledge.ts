@@ -171,11 +171,23 @@ export async function pgvectorRetrieve(query: string, k = 3): Promise<KnowledgeC
  * Unified retrieval entrypoint. Uses pgvector when both DATABASE_URL and
  * OPENAI_API_KEY are set; otherwise falls back to keyword overlap so local
  * dev and unconfigured deploys still produce reasonable answers.
+ *
+ * Self-healing: if pgvector returns zero rows (e.g. the corpus_chunks table
+ * exists but was never seeded — a common operational gap), fall back to the
+ * in-memory keyword retriever instead of returning an empty context. The
+ * graph's generate node treats empty context as "I don't know", so without
+ * this fallback an unseeded production DB makes every answer a canned miss.
  */
 export async function retrieve(query: string, k = 3): Promise<KnowledgeChunk[]> {
   if (process.env.DATABASE_URL && process.env.OPENAI_API_KEY) {
     try {
-      return await pgvectorRetrieve(query, k);
+      const rows = await pgvectorRetrieve(query, k);
+      if (rows.length === 0) {
+        console.warn('[knowledge] pgvector returned 0 rows — falling back to mock. ' +
+          'The corpus_chunks table is likely unseeded; run `npm run seed`.');
+        return mockRetrieve(query, k);
+      }
+      return rows;
     } catch (err) {
       console.error('[knowledge] pgvector retrieve failed, falling back to mock', {
         message: err instanceof Error ? err.message : String(err),
