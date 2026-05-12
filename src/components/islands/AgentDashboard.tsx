@@ -36,31 +36,35 @@ export default function AgentDashboard() {
         </ChartCard>
       </section>
 
-      {/* Model comparison table — companion to scatter chart */}
+      {/* Model comparison table — companion to scatter chart.
+          Wrapped in overflow-x-auto so the 6-column table can scroll
+          horizontally on phones rather than busting the viewport. */}
       <section>
         <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
           Model breakdown
         </h3>
-        <div className="rounded-xl border border-gray-800 bg-gray-900/40 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-900/80 text-xs font-mono uppercase tracking-wider text-gray-500">
+        <div className="rounded-xl border border-gray-800 bg-gray-900/40 overflow-x-auto">
+          <table className="w-full min-w-[640px] text-xs sm:text-sm">
+            <thead className="bg-gray-900/80 text-[10px] sm:text-xs font-mono uppercase tracking-wider text-gray-500">
               <tr>
-                <th className="text-left px-4 py-2.5">Model</th>
-                <th className="text-left px-4 py-2.5">Hosting</th>
-                <th className="text-right px-4 py-2.5">Success</th>
-                <th className="text-right px-4 py-2.5">Latency</th>
-                <th className="text-right px-4 py-2.5">Runs</th>
-                <th className="text-right px-4 py-2.5">$/1k runs</th>
+                <th className="text-left px-3 sm:px-4 py-2.5">Model</th>
+                <th className="text-left px-3 sm:px-4 py-2.5">Hosting</th>
+                <th className="text-right px-3 sm:px-4 py-2.5">Success</th>
+                <th className="text-right px-3 sm:px-4 py-2.5">Latency</th>
+                <th className="text-right px-3 sm:px-4 py-2.5">Runs</th>
+                <th className="text-right px-3 sm:px-4 py-2.5">$/1k runs</th>
               </tr>
             </thead>
             <tbody>
               {MODELS.map((m) => (
                 <tr key={m.id} className="border-t border-gray-800 hover:bg-gray-900/40">
-                  <td className="px-4 py-2.5 text-white flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: m.color }}></span>
-                    {m.name}
+                  <td className="px-3 sm:px-4 py-2.5 text-white whitespace-nowrap">
+                    <span className="inline-flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: m.color }}></span>
+                      {m.name}
+                    </span>
                   </td>
-                  <td className="px-4 py-2.5">
+                  <td className="px-3 sm:px-4 py-2.5">
                     <span className={`text-xs font-mono px-1.5 py-0.5 rounded border ${
                       m.hosted === 'cloud'
                         ? 'bg-blue-900/30 text-blue-300 border-blue-800'
@@ -69,10 +73,10 @@ export default function AgentDashboard() {
                       {m.hosted}
                     </span>
                   </td>
-                  <td className="px-4 py-2.5 text-right text-gray-200">{m.successRate.toFixed(1)}%</td>
-                  <td className="px-4 py-2.5 text-right text-gray-200">{m.avgLatencyMs}ms</td>
-                  <td className="px-4 py-2.5 text-right text-gray-400">{m.totalRuns.toLocaleString()}</td>
-                  <td className="px-4 py-2.5 text-right text-gray-400">${m.costPer1kRuns.toFixed(2)}</td>
+                  <td className="px-3 sm:px-4 py-2.5 text-right text-gray-200 whitespace-nowrap">{m.successRate.toFixed(1)}%</td>
+                  <td className="px-3 sm:px-4 py-2.5 text-right text-gray-200 whitespace-nowrap">{m.avgLatencyMs}ms</td>
+                  <td className="px-3 sm:px-4 py-2.5 text-right text-gray-400 whitespace-nowrap">{m.totalRuns.toLocaleString()}</td>
+                  <td className="px-3 sm:px-4 py-2.5 text-right text-gray-400 whitespace-nowrap">${m.costPer1kRuns.toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>
@@ -185,7 +189,7 @@ function ToolAccuracyChart() {
           dataKey="name"
           tick={{ fill: '#9ca3af', fontSize: 11, fontFamily: 'ui-monospace' }}
           stroke="#374151"
-          width={140}
+          width={100}
         />
         <Tooltip
           cursor={{ fill: '#1f2937' }}

@@ -93,14 +93,14 @@ export default function AgentChatWidget() {
   return (
     <div className="rounded-xl border border-gray-800 bg-gray-900/60 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-gray-800 px-4 py-3">
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 bg-agent-500 rounded-full animate-pulse"></span>
-          <span className="text-xs font-mono text-gray-400">
+      <div className="flex items-center justify-between gap-2 border-b border-gray-800 px-3 sm:px-4 py-2.5 sm:py-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="w-2 h-2 bg-agent-500 rounded-full animate-pulse shrink-0"></span>
+          <span className="text-[11px] sm:text-xs font-mono text-gray-400 truncate">
             Recursive Portfolio Agent · LangGraph
           </span>
         </div>
-        <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer select-none">
+        <label className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-gray-400 cursor-pointer select-none shrink-0">
           <input
             type="checkbox"
             checked={showThoughts}
@@ -112,7 +112,7 @@ export default function AgentChatWidget() {
       </div>
 
       {/* Transcript */}
-      <div ref={scrollRef} className="px-4 py-4 max-h-96 overflow-y-auto space-y-4">
+      <div ref={scrollRef} className="px-3 sm:px-4 py-3 sm:py-4 max-h-72 sm:max-h-96 overflow-y-auto space-y-3 sm:space-y-4">
         {turns.length === 0 && (
           <div className="text-center py-6">
             <p className="text-gray-500 text-sm mb-4">
@@ -182,13 +182,14 @@ export default function AgentChatWidget() {
         )}
       </div>
 
-      {/* Composer */}
+      {/* Composer — taller buttons on mobile to meet the 44px touch-target
+          recommendation; tighter on desktop where pointer precision is fine. */}
       <form
         onSubmit={(e) => {
           e.preventDefault();
           send(input);
         }}
-        className="border-t border-gray-800 px-4 py-3 flex gap-2"
+        className="border-t border-gray-800 px-3 sm:px-4 py-2.5 sm:py-3 flex gap-2"
       >
         <input
           type="text"
@@ -196,12 +197,12 @@ export default function AgentChatWidget() {
           onChange={(e) => setInput(e.target.value)}
           disabled={busy}
           placeholder="Ask about Thomas's background, skills, or projects…"
-          className="flex-1 bg-gray-800 border border-gray-700 focus:border-agent-600 focus:outline-none rounded-lg px-4 py-2 text-sm text-gray-100 placeholder-gray-600 disabled:opacity-50"
+          className="flex-1 min-w-0 bg-gray-800 border border-gray-700 focus:border-agent-600 focus:outline-none rounded-lg px-3 sm:px-4 py-2.5 sm:py-2 text-sm text-gray-100 placeholder-gray-600 disabled:opacity-50 min-h-[44px] sm:min-h-0"
         />
         <button
           type="submit"
           disabled={busy || !input.trim()}
-          className="bg-agent-600 hover:bg-agent-500 disabled:bg-gray-800 disabled:text-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          className="bg-agent-600 hover:bg-agent-500 disabled:bg-gray-800 disabled:text-gray-600 text-white px-4 py-2.5 sm:py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px] sm:min-h-0 shrink-0"
         >
           Send
         </button>

@@ -105,12 +105,12 @@ export default function AgentPlayground() {
           onChange={(e) => setQuery(e.target.value)}
           disabled={running}
           placeholder="Ask the agent something it needs to use tools to answer…"
-          className="flex-1 bg-gray-900 border border-gray-800 focus:border-agent-600 focus:outline-none rounded-lg px-4 py-2.5 text-gray-100 placeholder-gray-600 disabled:opacity-60"
+          className="flex-1 min-w-0 bg-gray-900 border border-gray-800 focus:border-agent-600 focus:outline-none rounded-lg px-4 py-3 sm:py-2.5 text-gray-100 placeholder-gray-600 disabled:opacity-60 min-h-[44px] sm:min-h-0"
         />
         <button
           type="submit"
           disabled={running || !query.trim()}
-          className="bg-agent-600 hover:bg-agent-500 disabled:bg-gray-800 disabled:text-gray-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors"
+          className="bg-agent-600 hover:bg-agent-500 disabled:bg-gray-800 disabled:text-gray-600 text-white px-5 py-3 sm:py-2.5 rounded-lg text-sm font-medium transition-colors min-h-[44px] sm:min-h-0"
         >
           {running ? 'Running…' : 'Run Agent'}
         </button>
@@ -141,7 +141,7 @@ export default function AgentPlayground() {
           </div>
         </div>
 
-        <div ref={traceRef} className="px-4 py-3 max-h-96 overflow-y-auto space-y-3">
+        <div ref={traceRef} className="px-3 sm:px-4 py-3 max-h-72 sm:max-h-96 overflow-y-auto space-y-3">
           {steps.length === 0 && !running && (
             <p className="text-gray-700 italic py-8 text-center text-sm">
               Submit a query — watch the agent reason, call tools, observe results, and synthesise an answer.
