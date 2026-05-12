@@ -32,6 +32,16 @@ const SCHEMA_DDL = `
     updated_at timestamptz NOT NULL DEFAULT now()
   );
 
+  -- Heal pre-existing tables that were created before the timestamp columns
+  -- were added to this script. ADD COLUMN IF NOT EXISTS is idempotent, and
+  -- the DEFAULT back-fills any existing rows so the NOT NULL constraint is
+  -- always satisfiable. Without this, the INSERT ... ON CONFLICT below fails
+  -- with: column "updated_at" of relation "corpus_chunks" does not exist.
+  ALTER TABLE corpus_chunks
+    ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now();
+  ALTER TABLE corpus_chunks
+    ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
+
   CREATE INDEX IF NOT EXISTS corpus_chunks_embedding_idx
     ON corpus_chunks
     USING hnsw (embedding vector_cosine_ops);

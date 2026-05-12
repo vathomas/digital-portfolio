@@ -64,9 +64,12 @@ describe('retrieve (router)', () => {
 
   it('still falls back when OPENAI_API_KEY is missing even with a DB url', async () => {
     process.env.DATABASE_URL = 'postgres://nowhere';
-    // No OPENAI_API_KEY → router stays on mockRetrieve, never opens a pool
+    // No OPENAI_API_KEY → router stays on mockRetrieve, never opens a pool.
+    // Multiple chunks now legitimately mention "certifications"; assert the
+    // primary cert chunk is in the top-3 rather than pinning to position 0,
+    // since the keyword retriever's tie-break order is intentionally arbitrary.
     const hits = await retrieve('certifications', 3);
     expect(hits.length).toBeGreaterThan(0);
-    expect(hits[0]?.id).toBe('cv-certs');
+    expect(hits.map((h) => h.id)).toContain('cv-certs');
   });
 });

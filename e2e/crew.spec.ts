@@ -22,7 +22,7 @@ test.describe('Crew Orchestrator (/crew)', () => {
     const input = page.getByPlaceholder('Describe a function for the crew to build…');
     await input.fill('a function that calculates fibonacci numbers');
 
-    const submitBtn = page.getByRole('button', { name: /build|run|start/i }).last();
+    const submitBtn = page.getByRole('button', { name: /dispatch|build|run|start/i }).last();
     await submitBtn.click();
 
     // Crew transcript should start populating — allow 45 s for LLM cold start
