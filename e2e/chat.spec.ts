@@ -41,9 +41,12 @@ test.describe('Chat widget (/about)', () => {
     const assistantMsg = page.locator('[data-role="assistant"]').first();
     await expect(assistantMsg).toBeVisible({ timeout: 30_000 });
 
-    const toggle = page.getByLabel('🧠 See Thoughts').or(page.getByText('🧠 See Thoughts'));
+    // Target the checkbox specifically — the previous locator was ambiguous
+    // because the <label> wraps the <input>, so both elements expose the
+    // accessible name "🧠 See Thoughts" and Playwright strict mode rejects.
+    const toggle = page.getByRole('checkbox', { name: /See Thoughts/i });
     if (await toggle.isVisible()) {
-      await toggle.click();
+      await toggle.check();
       // At least one thought step should now be visible
       const thoughtStep = page.locator('text=retrieve').or(page.locator('text=generate')).first();
       await expect(thoughtStep).toBeVisible({ timeout: 5_000 });
