@@ -9,48 +9,48 @@ const featured = allProjects.filter((p) => p.data.featured);
 
 <BaseLayout title="Thomas Abraham — Agentic AI Portfolio">
   <!-- Hero -->
-  <section class="mb-20">
-    <div class="inline-flex items-center gap-2 text-xs text-agent-500 bg-agent-900/30 border border-agent-800 px-3 py-1 rounded-full mb-6 font-mono">
+  <section class="mb-12 sm:mb-20">
+    <div class="inline-flex items-center gap-2 text-xs text-agent-500 bg-agent-900/30 border border-agent-800 px-3 py-1 rounded-full mb-5 sm:mb-6 font-mono">
       <span class="w-1.5 h-1.5 bg-agent-500 rounded-full animate-pulse"></span>
       Product Engineer · Bank of England · London
     </div>
-    <h1 class="text-5xl font-bold text-white mb-4 leading-tight">
+    <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-3 sm:mb-4 leading-tight break-words">
       Thomas Abraham
     </h1>
-    <p class="text-agent-500 text-xl font-mono mb-5">
+    <p class="text-agent-500 text-base sm:text-lg md:text-xl font-mono mb-4 sm:mb-5">
       Full-Stack Engineer &amp; Agentic AI Builder
     </p>
-    <p class="text-gray-400 text-lg max-w-2xl leading-relaxed mb-3">
+    <p class="text-gray-400 text-base sm:text-lg max-w-2xl leading-relaxed mb-3">
       10+ years building scalable systems across the UK, New Zealand, and India.
       Now pioneering AI-augmented engineering — systems that <span class="text-white">think</span>,
       <span class="text-white">act</span>, and <span class="text-white">self-correct</span>.
     </p>
-    <p class="text-gray-500 text-sm max-w-xl leading-relaxed mb-8">
+    <p class="text-gray-500 text-xs sm:text-sm max-w-xl leading-relaxed mb-6 sm:mb-8">
       React · TypeScript · C# · .NET · Azure · LangGraph · RAG · Multi-Agent Systems
     </p>
-    <div class="flex flex-wrap gap-3">
+    <div class="flex flex-wrap gap-2 sm:gap-3">
       <a href="/projects"
-         class="bg-agent-600 hover:bg-agent-500 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors">
+         class="inline-flex items-center justify-center min-h-[44px] bg-agent-600 hover:bg-agent-500 text-white px-4 sm:px-5 py-2.5 rounded-lg text-sm font-medium transition-colors">
         View AI Projects
       </a>
       <a href="/about"
-         class="border border-gray-700 hover:border-agent-700 text-gray-300 hover:text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors">
+         class="inline-flex items-center justify-center min-h-[44px] border border-gray-700 hover:border-agent-700 text-gray-300 hover:text-white px-4 sm:px-5 py-2.5 rounded-lg text-sm font-medium transition-colors">
         Chat with My AI
       </a>
       <a href="/certifications"
-         class="border border-gray-700 hover:border-agent-700 text-gray-300 hover:text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors">
+         class="inline-flex items-center justify-center min-h-[44px] border border-gray-700 hover:border-agent-700 text-gray-300 hover:text-white px-4 sm:px-5 py-2.5 rounded-lg text-sm font-medium transition-colors">
         Certifications
       </a>
       <a href="https://www.linkedin.com/in/tvabraham" target="_blank" rel="noopener"
-         class="border border-agent-800 hover:border-agent-600 text-agent-500 hover:text-agent-400 px-5 py-2.5 rounded-lg text-sm font-medium transition-colors">
+         class="inline-flex items-center justify-center min-h-[44px] border border-agent-800 hover:border-agent-600 text-agent-500 hover:text-agent-400 px-4 sm:px-5 py-2.5 rounded-lg text-sm font-medium transition-colors">
         LinkedIn ↗
       </a>
     </div>
   </section>
 
   <!-- Credential strip -->
-  <section class="mb-16">
-    <div class="flex flex-wrap gap-3">
+  <section class="mb-12 sm:mb-16">
+    <div class="flex flex-wrap gap-2 sm:gap-3">
       {[
         { label: 'Azure AZ-900', icon: '☁' },
         { label: 'DeepLearning.AI: Agentic AI', icon: '🤖' },
@@ -58,7 +58,7 @@ const featured = allProjects.filter((p) => p.data.featured);
         { label: 'IBM: Build RAG Applications', icon: '🔗' },
         { label: '10+ Years Full-Stack', icon: '⚡' },
       ].map(({ label, icon }) => (
-        <span class="inline-flex items-center gap-1.5 text-xs bg-gray-900 border border-gray-800 text-gray-400 px-3 py-1.5 rounded-full">
+        <span class="inline-flex items-center gap-1.5 text-[11px] sm:text-xs bg-gray-900 border border-gray-800 text-gray-400 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full">
           <span>{icon}</span>{label}
         </span>
       ))}
@@ -67,9 +67,9 @@ const featured = allProjects.filter((p) => p.data.featured);
 
   <!-- Featured Projects -->
   <section>
-    <h2 class="text-xl font-semibold text-white mb-2">Agentic AI Showcases</h2>
-    <p class="text-gray-500 text-sm mb-6">Four live demonstrations of AI systems that reason, act, and self-correct.</p>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <h2 class="text-lg sm:text-xl font-semibold text-white mb-2">Agentic AI Showcases</h2>
+    <p class="text-gray-500 text-sm mb-5 sm:mb-6">Four live demonstrations of AI systems that reason, act, and self-correct.</p>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
       {featured.map((project) => <ProjectCard project={project} />)}
     </div>
   </section>

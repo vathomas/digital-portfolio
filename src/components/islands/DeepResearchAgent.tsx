@@ -167,13 +167,13 @@ export default function DeepResearchAgent() {
           onChange={(e) => setTopic(e.target.value)}
           disabled={running}
           placeholder="Research topic, e.g. 'NVIDIA H200 benchmarks'…"
-          className="flex-1 bg-gray-900 border border-gray-800 focus:border-agent-600 focus:outline-none rounded-lg px-4 py-2.5 text-gray-100 placeholder-gray-600 disabled:opacity-60"
+          className="flex-1 min-w-0 bg-gray-900 border border-gray-800 focus:border-agent-600 focus:outline-none rounded-lg px-4 py-3 sm:py-2.5 text-gray-100 placeholder-gray-600 disabled:opacity-60 min-h-[44px] sm:min-h-0"
         />
         {running ? (
           <button
             type="button"
             onClick={abort}
-            className="bg-red-700 hover:bg-red-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors"
+            className="bg-red-700 hover:bg-red-600 text-white px-5 py-3 sm:py-2.5 rounded-lg text-sm font-medium transition-colors min-h-[44px] sm:min-h-0"
           >
             Abort
           </button>
@@ -181,7 +181,7 @@ export default function DeepResearchAgent() {
           <button
             type="submit"
             disabled={!topic.trim()}
-            className="bg-agent-600 hover:bg-agent-500 disabled:bg-gray-800 disabled:text-gray-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors"
+            className="bg-agent-600 hover:bg-agent-500 disabled:bg-gray-800 disabled:text-gray-600 text-white px-5 py-3 sm:py-2.5 rounded-lg text-sm font-medium transition-colors min-h-[44px] sm:min-h-0"
           >
             Run Research
           </button>
@@ -207,20 +207,22 @@ export default function DeepResearchAgent() {
         </div>
       )}
 
-      {/* Two-column: log + metrics */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      {/* Two-column: log + metrics. Stacks vertically on mobile; sidebar
+          drops below the log so the metrics don't get squeezed into a
+          two-column read on narrow screens. */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
 
         {/* Live log (left, 2/3) */}
         <div className="lg:col-span-2 rounded-xl border border-gray-800 bg-gray-950 overflow-hidden">
-          <div className="border-b border-gray-800 px-4 py-2.5 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className={`w-2 h-2 rounded-full ${running ? 'bg-agent-500 animate-pulse' : report ? 'bg-agent-700' : 'bg-gray-700'}`}></span>
-              <span className="text-xs font-mono text-gray-400">
+          <div className="border-b border-gray-800 px-3 sm:px-4 py-2.5 flex items-center justify-between">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className={`w-2 h-2 rounded-full shrink-0 ${running ? 'bg-agent-500 animate-pulse' : report ? 'bg-agent-700' : 'bg-gray-700'}`}></span>
+              <span className="text-[11px] sm:text-xs font-mono text-gray-400 truncate">
                 Live thought stream {running ? '· streaming' : report ? '· complete' : '· idle'}
               </span>
             </div>
           </div>
-          <div ref={logScrollRef} className="px-4 py-3 h-80 overflow-y-auto font-mono text-xs space-y-1">
+          <div ref={logScrollRef} className="px-3 sm:px-4 py-3 h-60 sm:h-72 md:h-80 overflow-y-auto font-mono text-xs space-y-1">
             {logs.length === 0 && !running && (
               <p className="text-gray-700 italic py-8 text-center">
                 Submit a topic to begin. The agent will plan, search, fact-check, summarize, and emit a PDF report — streaming each thought live.
@@ -259,16 +261,16 @@ export default function DeepResearchAgent() {
 
       {/* PDF download — appears when complete */}
       {report && (
-        <div className="rounded-xl border border-agent-800 bg-agent-900/20 p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div>
+        <div className="rounded-xl border border-agent-800 bg-agent-900/20 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="min-w-0">
             <p className="text-white font-semibold">Report ready</p>
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-gray-400 break-all">
               ID: <span className="font-mono text-xs">{report.id}</span> · {report.sourcesCount} sources
             </p>
           </div>
           <a
             href={`/api/research-pdf?id=${report.id}`}
-            className="bg-agent-600 hover:bg-agent-500 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors"
+            className="inline-flex items-center justify-center bg-agent-600 hover:bg-agent-500 text-white px-5 py-3 sm:py-2.5 rounded-lg text-sm font-medium transition-colors min-h-[44px] sm:min-h-0 shrink-0"
           >
             ↓ Download PDF
           </a>
