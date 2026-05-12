@@ -79,7 +79,7 @@ export default function CrewFlowChart({ active, visited, cycle }: Props) {
           <span className="text-xs font-mono text-agent-500">cycle {cycle}</span>
         )}
       </div>
-      <div className="p-4 min-h-[260px] flex items-center justify-center">
+      <div className="p-3 sm:p-4 min-h-56 sm:min-h-[260px] flex items-center justify-center overflow-x-auto">
         {renderError ? (
           <p className="text-xs text-red-400 font-mono">⨯ {renderError}</p>
         ) : (

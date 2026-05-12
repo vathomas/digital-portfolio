@@ -182,13 +182,13 @@ export default function CrewOrchestrator() {
           onChange={(e) => setPrompt(e.target.value)}
           disabled={running}
           placeholder="Describe a function for the crew to build…"
-          className="flex-1 bg-gray-900 border border-gray-800 focus:border-agent-600 focus:outline-none rounded-lg px-4 py-2.5 text-gray-100 placeholder-gray-600 disabled:opacity-60"
+          className="flex-1 min-w-0 bg-gray-900 border border-gray-800 focus:border-agent-600 focus:outline-none rounded-lg px-4 py-3 sm:py-2.5 text-gray-100 placeholder-gray-600 disabled:opacity-60 min-h-[44px] sm:min-h-0"
         />
         <select
           value={language}
           onChange={(e) => setLanguage(e.target.value as 'python' | 'typescript')}
           disabled={running}
-          className="bg-gray-900 border border-gray-800 rounded-lg px-3 py-2.5 text-gray-200 text-sm font-mono disabled:opacity-60"
+          className="bg-gray-900 border border-gray-800 rounded-lg px-3 py-3 sm:py-2.5 text-gray-200 text-sm font-mono disabled:opacity-60 min-h-[44px] sm:min-h-0"
         >
           <option value="typescript">TypeScript</option>
           <option value="python">Python</option>
@@ -196,7 +196,7 @@ export default function CrewOrchestrator() {
         <button
           type="submit"
           disabled={running || !prompt.trim()}
-          className="bg-agent-600 hover:bg-agent-500 disabled:bg-gray-800 disabled:text-gray-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors"
+          className="bg-agent-600 hover:bg-agent-500 disabled:bg-gray-800 disabled:text-gray-600 text-white px-5 py-3 sm:py-2.5 rounded-lg text-sm font-medium transition-colors min-h-[44px] sm:min-h-0"
         >
           {running ? 'Running…' : 'Dispatch Crew'}
         </button>
@@ -232,7 +232,7 @@ export default function CrewOrchestrator() {
               </span>
             </div>
           </div>
-          <div ref={logScrollRef} className="px-4 py-3 h-[260px] overflow-y-auto font-mono text-xs space-y-1">
+          <div ref={logScrollRef} className="px-3 sm:px-4 py-3 h-56 sm:h-64 md:h-[260px] overflow-y-auto font-mono text-xs space-y-1">
             {logs.length === 0 && !running && (
               <p className="text-gray-700 italic py-8 text-center">Dispatch the crew to begin.</p>
             )}
