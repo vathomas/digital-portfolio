@@ -5,6 +5,15 @@
 import { configDotenv } from 'dotenv';
 configDotenv({ override: true });
 
+import { readFileSync } from 'node:fs';
+import { execSync } from 'node:child_process';
+
+const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'));
+const gitSha = (() => {
+  try { return execSync('git rev-parse --short HEAD').toString().trim(); }
+  catch { return 'unknown'; }
+})();
+
 import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import sitemap from '@astrojs/sitemap';
@@ -24,6 +33,9 @@ export default defineConfig({
     }),
   ],
   vite: {
+    define: {
+      __APP_VERSION__: JSON.stringify(`v${pkg.version}+${gitSha}`),
+    },
     plugins: [tailwindcss()],
   },
 });

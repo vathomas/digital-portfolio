@@ -36,6 +36,13 @@ test.describe('Deep Research Agent (/research)', () => {
   });
 
   test('PDF download link appears after run completes', async ({ page }) => {
+    // Full pipeline (plan → search → fact-check → summarize → PDF render) can
+    // take well over the default 30 s per-test cap on a cold Vercel preview.
+    // Lift the test budget so the `toBeVisible({ timeout: 90_000 })` below
+    // can actually wait its full window without the framework killing the
+    // test out from under it.
+    test.setTimeout(150_000);
+
     await page.goto('/research');
 
     const input = page.getByPlaceholder("Research topic, e.g. 'NVIDIA H200 benchmarks'…");

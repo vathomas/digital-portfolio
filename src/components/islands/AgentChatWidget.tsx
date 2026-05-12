@@ -138,6 +138,7 @@ export default function AgentChatWidget() {
             className={`flex ${turn.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
+              data-role={turn.role}
               className={`max-w-[85%] rounded-lg px-4 py-2.5 text-sm leading-relaxed ${
                 turn.role === 'user'
                   ? 'bg-agent-700/40 border border-agent-800 text-gray-100'
