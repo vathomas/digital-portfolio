@@ -17,12 +17,21 @@ test.describe('Crew Orchestrator (/crew)', () => {
   });
 
   test('submitting a prompt streams crew transcript entries', async ({ page }) => {
+    // LLM cold-start on the preview deployment can blow past the default 30 s
+    // per-test cap; widen the budget so the 45 s waitForVisible below can run.
+    test.setTimeout(90_000);
+
     await page.goto('/crew');
 
     const input = page.getByPlaceholder('Describe a function for the crew to build…');
     await input.fill('a function that calculates fibonacci numbers');
 
+    // The submit button is disabled until React hydration runs and updates
+    // its state from the controlled input. Wait for it to become enabled
+    // before clicking — avoids a multi-second click-retry storm if the
+    // island hasn't hydrated yet.
     const submitBtn = page.getByRole('button', { name: /dispatch|build|run|start/i }).last();
+    await expect(submitBtn).toBeEnabled({ timeout: 15_000 });
     await submitBtn.click();
 
     // Crew transcript should start populating — allow 45 s for LLM cold start
@@ -38,9 +47,12 @@ test.describe('Crew Orchestrator (/crew)', () => {
   test('flowchart SVG is rendered on the page', async ({ page }) => {
     await page.goto('/crew');
 
-    // The Mermaid chart is rendered as an inline SVG by CrewFlowChart
-    // It is present even before a run starts (idle state shows the graph)
-    const svg = page.locator('svg').first();
+    // Scope the SVG locator to the main content area. The new mobile-nav
+    // hamburger button also contains an <svg>, and at the default Playwright
+    // viewport the button is display:none, so `page.locator('svg').first()`
+    // resolved to a hidden element and the assertion failed. Mermaid's SVG
+    // lives inside <main>, which is unambiguous.
+    const svg = page.locator('main svg').first();
     await expect(svg).toBeVisible({ timeout: 10_000 });
   });
 });
