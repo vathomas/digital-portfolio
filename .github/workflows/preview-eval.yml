@@ -23,6 +23,16 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
     branches: [develop, master]
+  # Allow ragas-eval to be triggered manually from the Actions tab when the
+  # CORPUS or eval/questions.jsonl actually changed. Ragas burns roughly
+  # $0.75 per run (50 chat round-trips against Claude Sonnet plus the
+  # gpt-4o-mini judge), so we don't want it firing on every PR.
+  workflow_dispatch:
+    inputs:
+      preview_url:
+        description: 'Vercel Preview (or Production) URL to evaluate against. e.g. https://digital-portfolio-xyz.vercel.app'
+        required: true
+        type: string
 
 # Cancel any superseded run for the same PR — saves CI minutes when a PR
 # is rapidly updated. Stage A has the same pattern, scoped to the ref.
@@ -40,6 +50,9 @@ jobs:
   #    Reads the GitHub Deployments API rather than polling the URL itself —
   #    that way Vercel's Deployment Protection (which 401s plain GET probes)
   #    cannot block this step.
+  #
+  #    On workflow_dispatch the user supplies a preview_url input directly,
+  #    so this step skips the deployment lookup and forwards that URL.
   # ─────────────────────────────────────────────────────────────────────────
   await-vercel:
     name: Wait for Vercel Preview
@@ -47,9 +60,20 @@ jobs:
     permissions:
       deployments: read
     outputs:
-      preview-url: ${{ steps.vercel.outputs.url }}
+      # One of these will be set depending on the trigger; the empty one
+      # just contributes the empty string.
+      preview-url: ${{ steps.vercel.outputs.url || steps.dispatched.outputs.url }}
     steps:
+      - name: Use the dispatched preview URL
+        if: github.event_name == 'workflow_dispatch'
+        id: dispatched
+        run: |
+          url="${{ inputs.preview_url }}"
+          echo "Using dispatched preview URL: $url"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
       - name: Wait for the Vercel Preview deployment via GitHub Deployments API
+        if: github.event_name != 'workflow_dispatch'
         id: vercel
         uses: actions/github-script@v7
         with:
@@ -108,6 +132,11 @@ jobs:
   # ─────────────────────────────────────────────────────────────────────────
   # 2) Ragas evaluation — run the 50 Q&A pairs through /api/chat on the
   #    Preview, score with gpt-4o-mini, gate on faithfulness ≥ 0.80.
+  #
+  #    Cost-gated: only runs on manual workflow_dispatch. Every full run
+  #    spends ~$0.75 in Anthropic credits (50 cold-start chat round-trips)
+  #    plus a few cents of OpenAI usage for the gpt-4o-mini judge. Trigger
+  #    it from the Actions tab after touching CORPUS or eval/questions.jsonl.
   # ─────────────────────────────────────────────────────────────────────────
   ragas-eval:
     name: Ragas evaluation
@@ -115,7 +144,8 @@ jobs:
     runs-on: ubuntu-latest
     # Forks don't get secrets — skip the eval there. Owners can re-run
     # after merging to develop if a contributor opens a PR from a fork.
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    # Also gate on workflow_dispatch so PR builds don't burn API credits.
+    if: github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v5
 
@@ -153,12 +183,15 @@ jobs:
 
   # ─────────────────────────────────────────────────────────────────────────
   # 3) Playwright E2E — smoke test all 4 showcase routes against the Preview.
+  #    Runs on PRs from the main repo (forks don't get secrets) but is
+  #    skipped on manual workflow_dispatch since the dispatch flow is
+  #    intended for re-running Ragas only.
   # ─────────────────────────────────────────────────────────────────────────
   e2e:
     name: Playwright E2E
     needs: await-vercel
     runs-on: ubuntu-latest
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - uses: actions/checkout@v5
 
