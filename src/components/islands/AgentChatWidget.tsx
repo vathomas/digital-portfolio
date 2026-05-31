@@ -18,7 +18,7 @@ const SUGGESTIONS = [
   'What does Thomas do at the Bank of England?',
   'Tell me about his agentic AI projects',
   'What certifications does he hold?',
-  'Where is he moving to in 2026?',
+  'What tech stack does Thomas work with?',
 ];
 
 export default function AgentChatWidget() {

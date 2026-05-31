@@ -4,7 +4,7 @@
  *   retrieve → grade → (pass) → generate
  *                    → (fail) → rewrite → retrieve   (max 2 retries)
  *
- * Real mode: grade + rewrite use GPT-4o-mini; generate uses Claude Sonnet.
+ * Real mode: grade, rewrite, and generate all use Claude Sonnet (CLAUDE_QUALITY).
  * retrieve stays on the mock corpus until DATABASE_URL + pgvector is wired.
  * The graph emits a `thoughts[]` trace consumed by the "See Thoughts" toggle.
  */

@@ -3,9 +3,8 @@ title: "Market Research Agentic Team"
 description: "End-to-end AI marketing pipeline in Python/Jupyter — multi-agent market research, internal product matching, AI image generation, copywriting, and an executive markdown report. Includes a reflection loop that monitors execution and dynamically revises the remaining plan."
 techStack: ["Python", "Jupyter", "OpenAI", "Image Generation", "Markdown"]
 agentLogicType: "Multi-Agent"
-status: "live"
+status: "prototype"
 publishedAt: 2025-12-01
-repoUrl: "https://github.com/vathomas/market-research-agentic-team"
 featured: false
 ---
 
@@ -27,6 +26,6 @@ The thing that lifts this above a linear pipeline is the **reflection loop**: a 
 
 Python + Jupyter notebooks, OpenAI for the language models and image generation, markdown for the final deliverable. Built to be read top-to-bottom in a notebook, not deployed as a service — the notebook *is* the artefact.
 
-## Source
+## Status
 
-[github.com/vathomas/market-research-agentic-team](https://github.com/vathomas/market-research-agentic-team)
+A research prototype that lives in a private notebook rather than on this site — the write-up above is the public summary.

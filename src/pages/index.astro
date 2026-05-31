@@ -4,7 +4,24 @@ import ProjectCard from '../components/ProjectCard.astro';
 import { getCollection } from 'astro:content';
 
 const allProjects = await getCollection('projects');
-const featured = allProjects.filter((p) => p.data.featured);
+
+// Featured = the five in-site showcases. Order them by showcase number so the
+// home grid reads 1 → 5 regardless of collection/file order. Any future
+// featured project not listed here sorts to the end.
+const SHOWCASE_ORDER = [
+  'recursive-portfolio-chatbot', // 1 · Chat
+  'deep-research-agent',         // 2 · Research
+  'software-architect-crew',     // 3 · Crew
+  'agent-playground',            // 4 · Playground
+  'agent-skills-dashboard',      // 5 · Dashboard
+];
+const rank = (id: string) => {
+  const i = SHOWCASE_ORDER.indexOf(id);
+  return i === -1 ? Number.POSITIVE_INFINITY : i;
+};
+const featured = allProjects
+  .filter((p) => p.data.featured)
+  .sort((a, b) => rank(a.id) - rank(b.id));
 ---
 
 <BaseLayout title="Thomas Abraham — Agentic AI Portfolio">
@@ -68,7 +85,7 @@ const featured = allProjects.filter((p) => p.data.featured);
   <!-- Featured Projects -->
   <section>
     <h2 class="text-lg sm:text-xl font-semibold text-white mb-2">Agentic AI Showcases</h2>
-    <p class="text-gray-500 text-sm mb-5 sm:mb-6">Four live demonstrations of AI systems that reason, act, and self-correct.</p>
+    <p class="text-gray-500 text-sm mb-5 sm:mb-6">Five interactive demonstrations of AI systems that reason, act, and self-correct.</p>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
       {featured.map((project) => <ProjectCard project={project} />)}
     </div>
