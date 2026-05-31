@@ -8,7 +8,7 @@ interface Project {
   description: string;
   techStack: string[];
   agentLogicType: AgentLogicType;
-  status: 'live' | 'wip' | 'archived';
+  status: 'live' | 'wip' | 'prototype' | 'archived';
 }
 
 interface Props {
@@ -18,6 +18,7 @@ interface Props {
 const statusColors: Record<string, string> = {
   live: 'text-green-400',
   wip: 'text-yellow-400',
+  prototype: 'text-blue-400',
   archived: 'text-gray-500',
 };
 

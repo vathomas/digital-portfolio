@@ -8,7 +8,7 @@ const projects = defineCollection({
     description: z.string(),
     techStack: z.array(z.string()),
     agentLogicType: z.enum(['ReAct', 'Plan-and-Execute', 'Multi-Agent', 'Self-Correcting', 'Tool-Use']),
-    status: z.enum(['live', 'wip', 'archived']),
+    status: z.enum(['live', 'wip', 'prototype', 'archived']),
     demoUrl: z.string().url().optional(),
     repoUrl: z.string().url().optional(),
     publishedAt: z.date(),

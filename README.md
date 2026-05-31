@@ -4,22 +4,25 @@
   <img src="public/og-default.png" alt="Thomas Abraham — Full-Stack Product Engineer & Agentic AI Builder" width="720" />
 </p>
 
-> Full-Stack Product Engineer with 10+ years building scalable systems across the UK, NZ, and India. Currently in London, relocating to Adelaide in June 2026. This site is the working demo: four production-shaped agentic AI showcases running on real LLM APIs, not mocks.
+> Full-Stack Product Engineer with 10+ years building scalable systems across the UK, NZ, and India. Currently in London, relocating to Adelaide in June 2026. This site is the working demo: five in-site agentic AI showcases (four running on real LLM APIs, not mocks) plus two Python prototypes.
 
 **Live:** _to be deployed at https://thomas-abraham.vercel.app_
 
 ---
 
-## The four showcases
+## The showcases
 
 | # | Showcase | Pattern | Route | What it proves |
 |---|---|---|---|---|
-| 1 | **Recursive Portfolio Chatbot** | Self-correcting RAG (LangGraph) | [`/about`](src/pages/about.astro) | retrieve → grade → rewrite → retry, with a "See Thoughts" toggle exposing the agent's reasoning trace. Real pgvector + OpenAI embeddings, Claude grader/generator. |
+| 1 | **Recursive Portfolio Chatbot** | Self-correcting RAG (LangGraph) | [`/chat`](src/pages/chat.astro) | retrieve → grade → rewrite → retry, with a "See Thoughts" toggle exposing the agent's reasoning trace. Real pgvector + OpenAI embeddings, Claude grader/generator. |
 | 2 | **Deep Research Agent** | Plan-and-execute autonomous loop | [`/research`](src/pages/research.astro) | plan → search → fact-check → summarise. Real Tavily web search, Claude synthesis, downloadable PDF report stored in Vercel Blob. |
-| 3 | **Software Architect Crew** | Multi-agent orchestration | [`/crew`](src/pages/crew.astro) | PM → Coder → Reviewer feedback loop with a live Mermaid flowchart highlighting which agent is "holding the token". Two-cycle review-and-revise loop with real Claude Sonnet writing production-grade code. |
-| 4 | **Agent Skills Dashboard** | ReAct tool-use playground | [`/dashboard`](src/pages/dashboard.astro) | Claude Haiku decides each tool call from a registry: live geolocation (Vercel edge headers) → OpenWeather → portfolio mood recommendation. Cost + token trace rendered live. |
+| 3 | **Software Architect Crew** | Multi-agent orchestration | [`/crew`](src/pages/crew.astro) | PM → Coder → Reviewer feedback loop with a live Mermaid flowchart highlighting which agent is "holding the token". Review-and-revise loop with Claude Haiku (PM/Reviewer) and Claude Sonnet (Coder). |
+| 4 | **Agent Playground** | ReAct tool-use | [`/playground`](src/pages/playground.astro) | Claude Haiku decides each tool call from a registry: live geolocation (Vercel edge headers) → OpenWeather → portfolio mood recommendation. Cost + token trace rendered live. |
+| 5 | **Agent Skills Dashboard** _(wip)_ | Telemetry / observability UI | [`/dashboard`](src/pages/dashboard.astro) | A sample observability surface (KPIs, model latency-vs-success scatter, tool accuracy) rendered from a **static mock dataset** — the aggregation layer that would sit over a production `agent_runs` table. Metrics are clearly-labelled placeholders. |
 
-Every showcase has a documented mock-mode fallback so `npm run dev` works without provisioning anything except an Anthropic key.
+Two further agents are off-site **Python/Jupyter prototypes** in private repositories, surfaced on [`/projects`](src/pages/projects/index.astro) as read-only write-ups: a multi-agent **market-research team** and a transactional **customer-service agent**.
+
+Showcases 1–4 require an `ANTHROPIC_API_KEY`; the playground also has a no-key regex fallback. The optional services (pgvector, Tavily, OpenWeather, Blob) each degrade to a documented mock/offline path so `npm run dev` works with just the Anthropic key.
 
 ---
 
@@ -45,7 +48,7 @@ flowchart LR
   Astro -->|put / head| Blob
 ```
 
-The Astro shell ships zero JS by default; only the four interactive React islands (`AgentChatWidget`, `DeepResearchAgent`, `CrewOrchestrator`, `AgentPlayground`) hydrate, each with its own `client:*` directive. All AI logic lives in serverless API routes — the islands are thin SSE consumers.
+The Astro shell ships minimal JS; only the interactive React islands hydrate, each with its own `client:*` directive: `AgentChatWidget`, `DeepResearchAgent`, `CrewOrchestrator` (+ `CrewFlowChart`), `AgentPlayground`, `AgentDashboard`, and `ProjectFilterBar`. The LLM logic lives in serverless API routes (`/api/chat`, `/api/research-stream`, `/api/crew-stream`, `/api/playground-stream`) that the islands consume over SSE/fetch; the dashboard island renders from a static dataset and makes no network calls.
 
 ---
 
@@ -58,7 +61,7 @@ The Astro shell ships zero JS by default; only the four interactive React island
 | Embeddings | **OpenAI** `text-embedding-3-small` (1536 dims) |
 | Vector store | **Neon Postgres + pgvector** with HNSW cosine index |
 | Web search | **Tavily** basic search (3 calls/report) |
-| State graphs | **LangGraph** for Showcase 1's correction loop; async generators for Showcases 2–4 (cleaner SSE streaming for plan-and-execute) |
+| State graphs | **LangGraph** for Showcase 1's correction loop; async generators for Showcases 2–4 (cleaner SSE streaming for plan-and-execute). Showcase 5 is a static UI with no agent graph. |
 | File storage | **Vercel Blob** for cross-invocation PDF persistence |
 | Deploy | **Vercel** (`@astrojs/vercel` adapter, web analytics enabled) |
 
@@ -74,7 +77,7 @@ echo 'ANTHROPIC_API_KEY=sk-ant-...' >> .env
 npm run dev
 ```
 
-Open http://localhost:4321. The minimum to demo all four showcases is just `ANTHROPIC_API_KEY`. Without the optional keys:
+Open http://localhost:4321. The minimum to demo the four LLM showcases is just `ANTHROPIC_API_KEY` (Showcase 5, the dashboard, is a static UI and needs no keys at all). Without the optional keys:
 
 - **Showcase 1** retrieval falls back to keyword overlap over the in-memory corpus
 - **Showcase 2** search falls back to clearly-labelled offline source stubs
@@ -107,7 +110,7 @@ The full Vercel + Neon + Blob runbook lives in [`docs/DEPLOYMENT.md`](docs/DEPLO
 5. `npm run seed` locally (embeds CORPUS into pgvector).
 6. Redeploy.
 
-A representative single-user session that exercises all four showcases costs roughly **$0.08**. Vercel + Neon + Blob fit the free tiers for portfolio traffic.
+A representative single-user session that exercises the four LLM showcases costs roughly **$0.08**. Vercel + Neon + Blob fit the free tiers for portfolio traffic.
 
 ---
 
@@ -134,7 +137,7 @@ The CI/CD pipeline is built in two stages, both running on every PR:
 **Stage B — post-deploy** (`.github/workflows/preview-eval.yml`)
 - `wait-for-vercel-preview` action blocks until the Vercel Preview is live
 - Python `ragas` job hits `${PREVIEW_URL}/api/chat`, scores 50 Q&A pairs, fails the build if `faithfulness < 0.80`
-- Playwright E2E suite exercises all four showcases against the same Preview URL
+- Playwright E2E suite exercises the four interactive showcases against the same Preview URL
 
 Promotion to production happens automatically when both stages pass on a merge to `master`.
 
@@ -144,11 +147,11 @@ Promotion to production happens automatically when both stages pass on a merge t
 
 ```
 src/
-├── content/projects/        4 markdown project descriptors with rich frontmatter
-├── content.config.ts        Zod schema (techStack, agentLogicType, ragas, …)
+├── content/projects/        7 markdown project descriptors (5 showcases + 2 prototypes)
+├── content.config.ts        Zod schema (techStack, agentLogicType, status, ragas, …)
 ├── components/
 │   ├── RagasCard.astro      4-tile metric card, traffic-light thresholds
-│   └── islands/             React islands — one per interactive showcase
+│   └── islands/             React islands — one per interactive showcase + ProjectFilterBar
 ├── layouts/
 │   ├── BaseLayout.astro     OG/Twitter/canonical meta, dark-mode shell
 │   └── ProjectLayout.astro  Project detail page
@@ -159,14 +162,15 @@ src/
 │   │   ├── crew-graph.ts        Showcase 3 — PM/Coder/Reviewer crew
 │   │   ├── playground-graph.ts  Showcase 4 — Claude ReAct planner
 │   │   ├── playground-tools.ts  tool registry: location/weather/time/projects
+│   │   ├── dashboard-data.ts    Showcase 5 — static mock telemetry dataset
 │   │   ├── knowledge.ts         CORPUS + retrieve() (pgvector or mock)
 │   │   ├── research-store.ts    Vercel Blob persistence for PDF reports
 │   │   ├── llm.ts               shared Anthropic + OpenAI providers
 │   │   └── id.ts                strict isValidReportId() — defends path traversal
 │   └── db.ts                Neon pg.Pool, TLS validation on
 └── pages/
-    ├── api/                 SSE routes — one per showcase + /research-pdf
-    ├── about|research|crew|dashboard.astro   showcase landing pages
+    ├── api/                 LLM routes — chat (POST) + research/crew/playground (SSE) + research-pdf
+    ├── chat|research|crew|playground|dashboard.astro   showcase landing pages
     └── projects/[slug].astro                 project detail
 scripts/
 ├── seed-corpus.ts           idempotent pgvector schema + embed

@@ -4,7 +4,6 @@ import {
   BarChart, Bar, LabelList,
 } from 'recharts';
 import { MODELS, TOOLS, summarize } from '../../lib/agent/dashboard-data';
-import AgentPlayground from './AgentPlayground';
 
 const SUMMARY = summarize();
 
@@ -30,7 +29,7 @@ export default function AgentDashboard() {
 
         <ChartCard
           title="Tool Usage Accuracy"
-          subtitle="Per-tool success vs. failure across all production agent runs."
+          subtitle="Per-tool success vs. failure across the mock dataset."
         >
           <ToolAccuracyChart />
         </ChartCard>
@@ -84,17 +83,6 @@ export default function AgentDashboard() {
         </div>
       </section>
 
-      {/* Playground */}
-      <section>
-        <div className="mb-4">
-          <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-1">Playground</h3>
-          <p className="text-gray-500 text-sm">
-            Trigger a tool-use event live. The agent decides which tools to call, in what order — every
-            thought, action, and observation streams in as it happens.
-          </p>
-        </div>
-        <AgentPlayground />
-      </section>
     </div>
   );
 }

@@ -26,30 +26,42 @@ npm run astro check  # Type-check all .astro files
 Tailwind v4 — the theme is extended in `src/styles/global.css` using `@theme {}` blocks (not `tailwind.config.*`). The custom `agent-*` green color palette is defined there. `global.css` is imported in `BaseLayout.astro`.
 
 ### Content Collections
-Project entries live in `src/content/projects/*.md`. The schema is in `src/content.config.ts` and enforces: `title`, `description`, `techStack[]`, `agentLogicType` (enum), `status` (enum), `publishedAt`, `featured`.
+Project entries live in `src/content/projects/*.md`. The schema is in `src/content.config.ts` and enforces: `title`, `description`, `techStack[]`, `agentLogicType` (enum), `status` (enum: `live` | `wip` | `prototype` | `archived`), `publishedAt`, `featured`, plus optional `demoUrl`, `repoUrl`, and a `ragas` block.
 
 ### Islands
-React components in `src/components/islands/` are the only interactive parts. Each island has a specific hydration directive set at the call site in `.astro` pages:
-- `AgentChatWidget.tsx` — `client:load` (chat, used on `/about`)
+React components in `src/components/islands/` are the only interactive parts. All of the Phase 2 islands below are built; each sets its hydration directive at the call site in its `.astro` page:
+- `AgentChatWidget.tsx` — `client:load` (self-correcting RAG chat, used on `/chat`)
 - `ProjectFilterBar.tsx` — `client:idle` (filterable project grid, used on `/projects`)
-- `AgentDashboard.tsx` — `client:visible` (metrics dashboard, used on `/dashboard`)
+- `DeepResearchAgent.tsx` — `client:load` (plan-and-execute research agent, used on `/research`)
+- `CrewOrchestrator.tsx` + `CrewFlowChart.tsx` — `client:load` (multi-agent crew + live Mermaid flowchart, used on `/crew`)
+- `AgentPlayground.tsx` — `client:load` (ReAct tool-use playground, used on `/playground`)
+- `AgentDashboard.tsx` — `client:load` (telemetry/observability UI, used on `/dashboard`)
 
-Phase 2 islands (`DeepResearchAgent`, `CrewOrchestrator`, `AgentFlowChart`) are planned but not yet created.
+Agent logic for the in-site showcases lives under `src/lib/agent/` (`graph.ts`, `research-graph.ts`, `crew-graph.ts`, `playground-graph.ts`); these call Claude via the Vercel AI SDK when `ANTHROPIC_API_KEY` is set. The playground planner and the RAG retrieval layer (`knowledge.ts`) degrade to deterministic mock/offline output without keys; the research search node falls back to offline stubs without `TAVILY_API_KEY`.
 
 ### Page Routes
 | Route | Purpose |
 |---|---|
-| `/` | Hero + featured project cards (static) |
+| `/` | Hero + featured showcase cards (static) |
 | `/projects` | Full list with `ProjectFilterBar` island |
 | `/projects/[slug]` | Individual project detail via `getStaticPaths` |
-| `/about` | `AgentChatWidget` island placeholder |
-| `/research` | Phase 2 placeholder |
-| `/crew` | Phase 2 placeholder |
-| `/dashboard` | `AgentDashboard` island placeholder |
+| `/about` | Bio, experience, skills + a CTA card linking to `/chat` |
+| `/chat` | Showcase 1 — `AgentChatWidget` island |
+| `/research` | Showcase 2 — `DeepResearchAgent` island |
+| `/crew` | Showcase 3 — `CrewOrchestrator` island |
+| `/playground` | Showcase 4 — `AgentPlayground` island |
+| `/dashboard` | Showcase 5 (wip) — `AgentDashboard` island |
+| `/certifications` | Certifications list |
 
 ### Layouts
 - `BaseLayout.astro` — HTML shell, nav, footer, imports `global.css`
 - `ProjectLayout.astro` — Wraps project detail pages, renders metadata header
 
-### Future API Routes
-When wiring Phase 2 AI backends, add server routes under `src/pages/api/`. Keep island components as thin UI wrappers; all AI logic belongs in API routes or external services.
+### API Routes
+Server routes live under `src/pages/api/` (all `export const prerender = false`):
+- `chat.ts` — POST, runs the RAG correction loop for `/chat`
+- `research-stream.ts` — SSE, streams the research agent's thoughts; `research-pdf.ts` serves the generated PDF
+- `crew-stream.ts` — SSE, streams the multi-agent crew's events
+- `playground-stream.ts` — SSE, streams the ReAct trace
+
+Keep island components as thin UI wrappers; all AI logic belongs in these API routes or `src/lib/agent/`. Requests are rate-limited per-tier in `src/middleware.ts` (Upstash); inputs are length-validated server-side before any model/tool call.

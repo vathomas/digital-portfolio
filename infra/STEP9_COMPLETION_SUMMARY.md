@@ -188,11 +188,12 @@ After `terraform apply`:
    - Vercel creates Preview deployment
    - CI — Stage B should pass (Ragas ≥ 0.80, Playwright all pass)
 
-3. **All 4 showcases should work**
+3. **The four LLM showcases should work with real data**
    - Showcase 1 (RAG): Real pgvector retrieval
    - Showcase 2 (Research): Real Tavily search
    - Showcase 3 (Crew): Real LLM orchestration
    - Showcase 4 (Playground): Real ReAct planning
+   - Showcase 5 (Dashboard): static observability UI — sample/placeholder metrics, no backend
 
 4. **Merge to master**
    ```bash

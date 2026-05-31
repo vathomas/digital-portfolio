@@ -4,8 +4,8 @@
  *   start → pm → coder → reviewer ─┬─► (REVISE) ─► coder ─► reviewer
  *                                   └─► (APPROVE) ─► end
  *
- * Real mode: PM and Reviewer use GPT-4o-mini (JSON mode);
- * Coder uses Claude Sonnet for high-quality code generation.
+ * Real mode: PM and Reviewer use Claude Haiku (CLAUDE_FAST, JSON output);
+ * Coder uses Claude Sonnet (CLAUDE_QUALITY) for high-quality code generation.
  */
 
 import { generateText } from 'ai';
@@ -50,7 +50,7 @@ async function* productManager(prompt: string): AsyncGenerator<CrewEvent, Requir
   yield think('pm', 'thought', `Reviewing user request: "${prompt}"`);
   await sleep(400);
 
-  yield think('pm', 'action', 'Generating structured requirements with GPT-4o-mini…');
+  yield think('pm', 'action', 'Generating structured requirements with Claude Haiku…');
 
   const { text } = await generateText({
     model: anthropic(CLAUDE_FAST),
@@ -164,7 +164,7 @@ async function* reviewer(
   requirements: Requirements,
 ): AsyncGenerator<CrewEvent, { verdict: Verdict; issues: ReviewIssue[] }> {
   yield state('reviewer', cycle);
-  yield think('reviewer', 'thought', `Auditing cycle ${cycle} draft with GPT-4o-mini…`);
+  yield think('reviewer', 'thought', `Auditing cycle ${cycle} draft with Claude Haiku…`);
   await sleep(300);
 
   yield think('reviewer', 'action', 'Checking correctness, types, edge cases, and documentation…');

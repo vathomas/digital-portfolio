@@ -2,9 +2,9 @@
  * Mock benchmark dataset for the Agent Skills Dashboard.
  *
  * In real mode, these are aggregated from a `agent_runs` table populated
- * by the production agents (Showcases 1-3) writing telemetry to Postgres.
- * For now, the numbers are realistic and consistent with published bench-
- * marks at the time of this writing.
+ * by the production agents (Showcases 1-4) writing telemetry to Postgres.
+ * For now, the numbers are an illustrative placeholder dataset — they are
+ * NOT measured, and the dashboard UI labels them as such.
  */
 
 export interface ModelStats {
@@ -21,7 +21,7 @@ export interface ModelStats {
 }
 
 export const MODELS: ModelStats[] = [
-  { id: 'claude-sonnet',  name: 'Claude Sonnet 4.6', family: 'claude', hosted: 'cloud', successRate: 96.4, avgLatencyMs: 920, totalRuns: 1284, costPer1kRuns: 18.40, color: '#22c55e' },
+  { id: 'claude-sonnet',  name: 'Claude Sonnet 4.5', family: 'claude', hosted: 'cloud', successRate: 96.4, avgLatencyMs: 920, totalRuns: 1284, costPer1kRuns: 18.40, color: '#22c55e' },
   { id: 'gpt-4o',         name: 'GPT-4o',            family: 'gpt',    hosted: 'cloud', successRate: 95.1, avgLatencyMs: 1180, totalRuns: 1547, costPer1kRuns: 12.90, color: '#a855f7' },
   { id: 'gpt-4o-mini',    name: 'GPT-4o-mini',       family: 'gpt',    hosted: 'cloud', successRate: 91.8, avgLatencyMs: 610, totalRuns: 2103, costPer1kRuns: 1.85, color: '#c084fc' },
   { id: 'llama-3-70b',    name: 'Llama 3 70B',       family: 'llama',  hosted: 'local', successRate: 87.2, avgLatencyMs: 1640, totalRuns: 412, costPer1kRuns: 0.45, color: '#f59e0b' },

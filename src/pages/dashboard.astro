@@ -5,19 +5,34 @@ import AgentDashboard from '../components/islands/AgentDashboard';
 
 <BaseLayout
   title="Agent Skills Dashboard — Thomas Abraham"
-  description="Performance metrics across models and tools, plus a live ReAct tool-use playground."
+  description="Sample observability UI for agent runs — model comparison, tool accuracy, and KPIs. Metrics are placeholders."
 >
   <!-- Header -->
-  <div class="mb-10">
+  <div class="mb-6">
     <div class="inline-flex items-center gap-2 text-xs text-agent-500 bg-agent-900/30 border border-agent-800 px-3 py-1 rounded-full mb-4 font-mono">
       <span class="w-1.5 h-1.5 bg-agent-500 rounded-full animate-pulse"></span>
-      Showcase 4 · Telemetry &amp; Tool-Use
+      Showcase 5 (wip) · Telemetry UI
     </div>
     <h1 class="text-3xl font-bold text-white mb-3">Agent Skills Dashboard</h1>
     <p class="text-gray-400 max-w-2xl leading-relaxed">
-      Aggregated performance metrics across the production agents — Showcases 1-3 — broken down by
-      model and tool. Below, a live <span class="text-agent-400 font-medium">ReAct</span> playground
-      where you can trigger a tool-use event and watch the agent reason through it.
+      A sample observability surface for agent runs — KPIs, a latency-vs-success
+      scatter across models, and per-tool accuracy. Designed as the aggregation
+      layer that would sit over a production <span class="font-mono text-agent-400">agent_runs</span>
+      telemetry table.
+    </p>
+  </div>
+
+  <!-- Placeholder notice — make it obvious to visitors that the numbers are illustrative. -->
+  <div
+    role="note"
+    class="mb-10 flex items-start gap-3 rounded-lg border border-yellow-800/60 bg-yellow-900/20 px-4 py-3 text-sm"
+  >
+    <span aria-hidden="true" class="mt-0.5 text-yellow-400">⚠</span>
+    <p class="text-yellow-200">
+      <span class="font-semibold">Sample observability UI — metrics are placeholders.</span>
+      <span class="block text-yellow-200/80 mt-0.5">
+        Numbers below come from a static mock dataset, not a live telemetry pipeline.
+      </span>
     </p>
   </div>
 
@@ -29,12 +44,21 @@ import AgentDashboard from '../components/islands/AgentDashboard';
     <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">How it works</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
       <div class="bg-gray-900/40 border border-gray-800 rounded-lg p-4">
-        <p class="text-white font-medium mb-1">Telemetry source</p>
+        <p class="text-white font-medium mb-1">Data source (today)</p>
         <p class="text-gray-500 leading-relaxed">
-          In production, every agent run from Showcases 1-3 writes a row to a Postgres
-          <span class="font-mono text-agent-400">agent_runs</span> table — model, tool calls,
-          latency, success, cost. The dashboard is a thin aggregation layer over that table.
-          Currently shows mock data with realistic distributions.
+          A static TypeScript module — <span class="font-mono text-agent-400">src/lib/agent/dashboard-data.ts</span>
+          — exports a small mock dataset of model and tool stats with realistic
+          distributions. Aggregations (weighted success, weighted latency, tool
+          accuracy) are computed in-process on import.
+        </p>
+      </div>
+      <div class="bg-gray-900/40 border border-gray-800 rounded-lg p-4">
+        <p class="text-white font-medium mb-1">Data source (planned)</p>
+        <p class="text-gray-500 leading-relaxed">
+          The intended production shape: every agent run from the other showcases
+          writes a row to a Postgres <span class="font-mono text-agent-400">agent_runs</span>
+          table — model, tool calls, latency, success, cost — and this page becomes
+          a thin aggregation layer over it.
         </p>
       </div>
       <div class="bg-gray-900/40 border border-gray-800 rounded-lg p-4">
@@ -46,21 +70,11 @@ import AgentDashboard from '../components/islands/AgentDashboard';
         </p>
       </div>
       <div class="bg-gray-900/40 border border-gray-800 rounded-lg p-4">
-        <p class="text-white font-medium mb-1">Playground pattern</p>
+        <p class="text-white font-medium mb-1">Live tool-use playground</p>
         <p class="text-gray-500 leading-relaxed">
-          Classic ReAct loop: <span class="font-mono text-blue-400">thought</span> →
-          <span class="font-mono text-yellow-400">action</span> (tool call) →
-          <span class="font-mono text-gray-400">observation</span> → repeat → final answer.
-          Each step streams over SSE so the trace renders live.
-        </p>
-      </div>
-      <div class="bg-gray-900/40 border border-gray-800 rounded-lg p-4">
-        <p class="text-white font-medium mb-1">Mock vs. real mode</p>
-        <p class="text-gray-500 leading-relaxed">
-          The mock planner is a small heuristic (keyword → tool plan); the real-mode swap
-          is a single LLM call with the tool registry passed as a system prompt. Tool
-          implementations swap from canned data to OpenWeather + browser geolocation +
-          pgvector search.
+          The ReAct tool-use playground lives on its own page — see
+          <a href="/playground" class="text-agent-400 hover:text-agent-300 underline">/playground</a>
+          to trigger an agent run and watch the trace stream in.
         </p>
       </div>
     </div>

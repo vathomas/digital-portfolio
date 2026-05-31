@@ -70,11 +70,12 @@ import CrewOrchestrator from '../components/islands/CrewOrchestrator';
         </p>
       </div>
       <div class="bg-gray-900/40 border border-gray-800 rounded-lg p-4">
-        <p class="text-white font-medium mb-1">Mock vs. real mode</p>
+        <p class="text-white font-medium mb-1">Real LLM calls</p>
         <p class="text-gray-500 leading-relaxed">
-          Mock-mode emits canned-but-realistic outputs keyed off the user prompt. Real-mode swap-points
-          are marked in <span class="font-mono text-agent-400">crew-graph.ts</span> — each agent becomes
-          a distinct LLM call (Claude Sonnet recommended for synthesis, OpenAI gpt-4o-mini for review).
+          With <span class="font-mono text-agent-400">ANTHROPIC_API_KEY</span> set, each agent is a real
+          Claude call — <span class="font-mono">Haiku</span> for the Product Manager and Reviewer,
+          <span class="font-mono">Sonnet</span> for the Coder. If a model returns unparseable JSON, the
+          agent falls back to a canned-but-realistic result so a run never hard-breaks mid-demo.
         </p>
       </div>
     </div>
