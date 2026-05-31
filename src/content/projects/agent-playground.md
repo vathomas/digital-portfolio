@@ -5,7 +5,7 @@ techStack: ["Astro", "Vercel AI SDK", "Claude Haiku", "SSE", "React"]
 agentLogicType: "ReAct"
 status: "live"
 publishedAt: 2026-05-15
-featured: false
+featured: true
 ---
 
 A focused single-page demo of the **ReAct** pattern: thought → action (tool call) → observation → repeat → answer. The agent reasons about the user's query, decides which tools to call, in what order, and synthesises the final response. Every step streams to the UI live.

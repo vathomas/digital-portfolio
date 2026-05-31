@@ -8,9 +8,7 @@ interface Project {
   description: string;
   techStack: string[];
   agentLogicType: AgentLogicType;
-  status: 'live' | 'wip' | 'archived';
-  /** Only set on external (off-site) projects — surfaces a GitHub badge. */
-  repoUrl?: string;
+  status: 'live' | 'wip' | 'prototype' | 'archived';
 }
 
 interface Props {
@@ -20,6 +18,7 @@ interface Props {
 const statusColors: Record<string, string> = {
   live: 'text-green-400',
   wip: 'text-yellow-400',
+  prototype: 'text-blue-400',
   archived: 'text-gray-500',
 };
 
@@ -58,18 +57,11 @@ export default function ProjectFilterBar({ projects }: Props) {
             href={`/projects/${p.slug}`}
             className="block bg-gray-900 border border-gray-800 rounded-xl p-6 hover:border-green-700 transition-all group"
           >
-            <div className="flex items-start justify-between mb-3 gap-2">
+            <div className="flex items-start justify-between mb-3">
               <span className="text-xs font-mono bg-gray-800 text-gray-400 px-2 py-0.5 rounded border border-gray-700">
                 {p.agentLogicType}
               </span>
-              <div className="flex items-center gap-2 shrink-0">
-                {p.repoUrl && (
-                  <span className="text-[10px] font-mono text-gray-500 bg-gray-800/60 border border-gray-700 px-1.5 py-0.5 rounded">
-                    ↗ GitHub
-                  </span>
-                )}
-                <span className={`text-xs font-mono ${statusColors[p.status]}`}>{p.status}</span>
-              </div>
+              <span className={`text-xs font-mono ${statusColors[p.status]}`}>{p.status}</span>
             </div>
             <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-green-400 transition-colors">
               {p.title}

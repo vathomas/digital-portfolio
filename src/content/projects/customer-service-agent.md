@@ -3,9 +3,8 @@ title: "Customer Service Agent"
 description: "Prototype Python/Jupyter retail agent for sunglasses inventory and transactions — formal tool registry, argument canonicalisation, DuckDB over pandas, assertive validation, and propose-vs-commit transaction tooling driven by GPT-4o plan reflection."
 techStack: ["Python", "Jupyter", "GPT-4o", "DuckDB", "pandas"]
 agentLogicType: "Tool-Use"
-status: "live"
+status: "prototype"
 publishedAt: 2025-11-01
-repoUrl: "https://github.com/vathomas/customer-service-agent"
 featured: false
 ---
 
@@ -24,6 +23,6 @@ A transactional retail assistant built as a working prototype. The agent manages
 
 Python + Jupyter, OpenAI **GPT-4o** for planning and reflection, DuckDB for analytical SQL, pandas as the in-memory store.
 
-## Source
+## Status
 
-[github.com/vathomas/customer-service-agent](https://github.com/vathomas/customer-service-agent)
+A research prototype that lives in a private notebook rather than on this site — the write-up above is the public summary.

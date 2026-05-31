@@ -6,9 +6,10 @@
  * Implemented as an async generator that yields Thought events.
  * The SSE route consumes this generator and pipes each event to the browser.
  *
- * Real mode: GPT-4o-mini for planning/searching/fact-checking;
- * Claude Sonnet for final synthesis. Token counts are accumulated and
- * used to compute the real cost displayed on the UI.
+ * Live mode: Claude Haiku for planning and fact-checking, Claude Sonnet for
+ * the final synthesis, and the Tavily web API for search. Token counts are
+ * accumulated and used to compute the real cost displayed on the UI.
+ * Without TAVILY_API_KEY the search node emits clearly-labelled offline stubs.
  */
 
 import { generateText } from 'ai';
@@ -52,21 +53,25 @@ function topicKeywords(topic: string): string[] {
     .slice(0, 4);
 }
 
-/** Fallback sources used if the LLM response cannot be parsed. */
+/**
+ * Offline source stubs — used when TAVILY_API_KEY is unset or a live search
+ * fails. Deliberately labelled as demo placeholders rather than fabricated
+ * arXiv / analyst citations, so the trace never passes invented sources off
+ * as real ones. With a Tavily key these are replaced by real web results.
+ */
 function fallbackSourcesFor(topic: string, subQuestion: string): Source[] {
   const kw = topicKeywords(topic);
-  const anchor = kw[0] ?? 'topic';
-  const arxivId = `${2410 + Math.floor(Math.random() * 4)}.${String(Math.floor(Math.random() * 90000) + 10000)}`;
+  const anchor = kw[0] ?? 'the topic';
   return [
     {
-      title: `Empirical study on ${anchor}: scaling and bottlenecks`,
-      citation: `arXiv:${arxivId} (Chen et al., 2026)`,
-      finding: `Quantitative analysis relevant to "${subQuestion}" — observed 1.7× throughput improvement.`,
+      title: `Offline demo stub — primary source on ${anchor}`,
+      citation: 'Offline demo stub · no live source (set TAVILY_API_KEY for real, cited results)',
+      finding: `Placeholder finding relevant to "${subQuestion}". In live mode this row is a real Tavily web result with a resolvable URL.`,
     },
     {
-      title: `Industry report — ${kw.slice(0, 3).join(' ')}`,
-      citation: `Gartner Research Note #G00${Math.floor(Math.random() * 90000) + 10000}, Q1 2026`,
-      finding: `Adoption metrics indicate 38% YoY growth through 2027.`,
+      title: `Offline demo stub — secondary source on ${kw.slice(0, 3).join(' ') || anchor}`,
+      citation: 'Offline demo stub · no live source',
+      finding: 'Placeholder secondary finding. Connect a Tavily key to populate this with a genuine, cited web source.',
     },
   ];
 }
