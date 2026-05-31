@@ -27,8 +27,9 @@ export const CLAUDE_FAST = 'claude-haiku-4-5-20251001' as const;
 
 /**
  * OpenAI provider — used only for embeddings (text-embedding-3-small).
- * Generation across all four showcases is Anthropic. We pull in OpenAI here
- * because Anthropic does not yet expose a public embeddings endpoint.
+ * Generation across the four LLM showcases (chat, research, crew, playground)
+ * is Anthropic; the dashboard is a static UI with no generation. We pull in
+ * OpenAI here because Anthropic does not yet expose a public embeddings endpoint.
  */
 export const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY });
 

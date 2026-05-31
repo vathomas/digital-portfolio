@@ -1,8 +1,8 @@
 # Deployment guide
 
-This document is the click-by-click runbook for taking the portfolio from local dev to a production Vercel deployment with all four showcases in real mode. Everything below is one-time setup unless marked otherwise.
+This document is the click-by-click runbook for taking the portfolio from local dev to a production Vercel deployment with all showcases in real mode. Everything below is one-time setup unless marked otherwise.
 
-If you only want to demo locally, skip to the bottom: [§7 Local development](#7-local-development) — only `ANTHROPIC_API_KEY` is required and every showcase has a mock-mode fallback.
+If you only want to demo locally, skip to the bottom: [§7 Local development](#7-local-development) — only `ANTHROPIC_API_KEY` is required for the four LLM showcases (the dashboard is a static UI), and every optional service has a mock-mode fallback.
 
 ---
 
@@ -12,7 +12,7 @@ The full env-var contract lives in [`.env.example`](../.env.example). Brief reca
 
 | Variable | Used by | Required for production? |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | All four showcases (generation) | **Yes** |
+| `ANTHROPIC_API_KEY` | Showcases 1–4 (generation) | **Yes** |
 | `OPENAI_API_KEY` | Showcase 1 embeddings | Yes (real RAG) |
 | `DATABASE_URL` | Showcase 1 pgvector retrieval | Yes (real RAG) |
 | `TAVILY_API_KEY` | Showcase 2 web search | Yes (real research) |
@@ -156,10 +156,11 @@ The 4 LangGraph / async-generator orchestrations themselves run identically to p
 After your first prod deploy:
 
 - [ ] `https://your-domain.vercel.app/` loads
-- [ ] `/about` chat returns a thoughts trace with real `corpus_chunks.*` IDs (not mock IDs)
+- [ ] `/chat` returns a thoughts trace with real `corpus_chunks.*` IDs (not mock IDs)
 - [ ] `/research` agent emits live SSE events and the **Download PDF** button returns a real PDF (proves Blob round-trip works)
 - [ ] `/crew` agent runs PM → Coder → Reviewer cycle to completion
-- [ ] `/dashboard` playground answers "weather in London" with real OpenWeatherMap data
+- [ ] `/playground` answers "weather in London" with real OpenWeatherMap data
+- [ ] `/dashboard` renders the sample telemetry UI with its "metrics are placeholders" notice
 - [ ] Vercel function logs show no `[research-store]`, `[knowledge]`, or `[research-graph]` warnings on a clean run
 
 If any of those fail, the Vercel **Logs** tab is the first place to look — every fallback path logs a single line identifying which env var is missing.
@@ -168,7 +169,7 @@ If any of those fail, the Vercel **Logs** tab is the first place to look — eve
 
 ## 9. Cost expectations
 
-A representative single-user session, all four showcases hit once:
+A representative single-user session, the four LLM showcases hit once (the dashboard is static and free to serve):
 
 | Showcase | What it spends | Approx |
 |---|---|---|

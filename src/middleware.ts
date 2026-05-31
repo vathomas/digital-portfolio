@@ -10,8 +10,8 @@
  *   1. Per-endpoint sliding window — research and crew (expensive) get the
  *      tightest budgets; chat and playground (cheap, conversational) looser.
  *   2. Global burst window — 30 requests/minute across all /api/* keeps a
- *      single IP from spreading load across all four showcases to evade
- *      per-endpoint caps.
+ *      single IP from spreading load across the four API-backed showcases
+ *      (chat, research, crew, playground) to evade per-endpoint caps.
  *   3. Token caps inside each LLM call (see src/lib/agent/llm-caps.ts) cap
  *      worst-case cost PER CALL even when a request makes it through here.
  *
