@@ -1,0 +1,69 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import AgentChatWidget from '../components/islands/AgentChatWidget';
+---
+
+<BaseLayout
+  title="Ask My AI — Thomas Abraham"
+  description="Self-correcting RAG chatbot — ask about Thomas's background, skills, certifications, and projects. Powered by a LangGraph correction loop."
+>
+  <!-- Header -->
+  <div class="mb-10">
+    <div class="inline-flex items-center gap-2 text-xs text-agent-500 bg-agent-900/30 border border-agent-800 px-3 py-1 rounded-full mb-4 font-mono">
+      <span class="w-1.5 h-1.5 bg-agent-500 rounded-full animate-pulse"></span>
+      Showcase 1 · Self-Correcting RAG
+    </div>
+    <h1 class="text-3xl font-bold text-white mb-3">Ask My AI</h1>
+    <p class="text-gray-400 max-w-2xl leading-relaxed">
+      A self-correcting RAG agent that answers questions about Thomas's background, skills,
+      and projects. It <span class="text-agent-400 font-medium">retrieves</span> context from
+      a pgvector store, then <span class="text-agent-400 font-medium">grades</span> its own
+      answer — rewriting the query and retrying when the grade fails. Toggle
+      <span class="font-mono text-agent-400">See Thoughts</span> to watch the loop work.
+    </p>
+  </div>
+
+  <!-- Chat island -->
+  <AgentChatWidget client:load />
+
+  <!-- Tech notes -->
+  <section class="mt-12 pt-8 border-t border-gray-800">
+    <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">How it works</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+      <div class="bg-gray-900/40 border border-gray-800 rounded-lg p-4">
+        <p class="text-white font-medium mb-1">Correction loop</p>
+        <p class="text-gray-500 leading-relaxed">
+          <span class="font-mono text-agent-400">retrieve</span> → <span class="font-mono text-agent-400">grade</span> →
+          <span class="font-mono text-agent-400">rewrite</span> → retry → <span class="font-mono text-agent-400">generate</span>.
+          The grader is a small LLM that decides whether the retrieved context actually answers the question;
+          if not, the query is rewritten and the loop runs again.
+        </p>
+      </div>
+      <div class="bg-gray-900/40 border border-gray-800 rounded-lg p-4">
+        <p class="text-white font-medium mb-1">Knowledge source</p>
+        <p class="text-gray-500 leading-relaxed">
+          The corpus is Thomas's resume, GitHub activity, certifications, and the project
+          write-ups from this site. Stored as <span class="font-mono text-agent-400">pgvector</span>
+          embeddings; retrieval is cosine similarity with a small top-k.
+        </p>
+      </div>
+      <div class="bg-gray-900/40 border border-gray-800 rounded-lg p-4">
+        <p class="text-white font-medium mb-1">See Thoughts</p>
+        <p class="text-gray-500 leading-relaxed">
+          Toggling the panel exposes the per-turn trace — which documents were retrieved,
+          the grader's verdict, any rewritten query, and the final generate-token count.
+          Designed to make the loop legible, not a black box.
+        </p>
+      </div>
+      <div class="bg-gray-900/40 border border-gray-800 rounded-lg p-4">
+        <p class="text-white font-medium mb-1">Rate limiting</p>
+        <p class="text-gray-500 leading-relaxed">
+          The chat endpoint is rate-limited per visitor in middleware to keep the demo
+          cheap and prevent abuse. Messages are length-validated server-side before any
+          retrieval runs.
+        </p>
+      </div>
+    </div>
+  </section>
+
+</BaseLayout>
