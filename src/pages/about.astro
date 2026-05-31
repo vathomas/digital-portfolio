@@ -1,6 +1,5 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import AgentChatWidget from '../components/islands/AgentChatWidget';
 ---
 
 <BaseLayout title="About — Thomas Abraham" description="10+ years building full-stack systems. Now building Agentic AI at the Bank of England.">
@@ -190,14 +189,24 @@ import AgentChatWidget from '../components/islands/AgentChatWidget';
     </div>
   </div>
 
-  <!-- Chat widget -->
+  <!-- Chat CTA — the widget itself now lives on /chat. -->
   <div class="mt-16 border-t border-gray-800 pt-12">
-    <h2 class="text-lg font-semibold text-white mb-2">Ask My AI</h2>
-    <p class="text-gray-500 text-sm mb-6">
-      Powered by a self-correcting RAG agent — ask anything about my background, skills, or experience.
-      <span class="text-gray-700">(Phase 2 — coming soon)</span>
-    </p>
-    <AgentChatWidget client:load />
+    <div class="rounded-xl border border-agent-800 bg-agent-900/20 p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+      <div class="flex-1">
+        <h2 class="text-lg font-semibold text-white mb-1">Ask My AI</h2>
+        <p class="text-gray-400 text-sm leading-relaxed">
+          Rather than read this page, ask the self-correcting RAG agent anything about my
+          background, skills, certifications, or projects — it retrieves, grades its own
+          answer, and rewrites the query if the grade fails.
+        </p>
+      </div>
+      <a
+        href="/chat"
+        class="inline-flex items-center justify-center min-h-[44px] bg-agent-600 hover:bg-agent-500 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors shrink-0"
+      >
+        Open Chat →
+      </a>
+    </div>
   </div>
 
 </BaseLayout>
