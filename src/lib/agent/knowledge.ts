@@ -294,22 +294,25 @@ export const CORPUS: KnowledgeChunk[] = [
     source: 'repo',
     topic: 'market-research-agentic-team project',
     text:
-      'market-research-agentic-team is a multi-agent system on GitHub where a Researcher agent ' +
-      'calls the Tavily web search API, a Writer agent drafts a report, and a Critic agent runs ' +
-      'a reflection loop that sends the draft back for revision until quality criteria are met. ' +
-      'It uses GPT-4o, LangGraph state graphs, and the Tavily API, and demonstrates ' +
-      'plan-then-execute and self-correction patterns.',
+      'market-research-agentic-team is a multi-agent, end-to-end AI marketing pipeline built in ' +
+      'Python/Jupyter. It combines tool-enabled market research, internal product-catalogue ' +
+      'matching, AI image generation, copywriting, and executive markdown report packaging, and ' +
+      'includes a reflection-based planning loop that monitors execution and dynamically revises ' +
+      'the remaining plan. It uses OpenAI models for language and image generation, demonstrating ' +
+      'practical AI orchestration and prompt-driven workflow automation. It is a private prototype ' +
+      'repository, not deployed on this site.',
   },
   {
     id: 'repo-customer-service',
     source: 'repo',
     topic: 'customer-service-agent project',
     text:
-      'customer-service-agent is an autonomous customer service agent on GitHub that handles ' +
-      'natural-language retail requests (purchases, returns, stock queries) end-to-end. It uses ' +
-      'a formal tool registry, argument canonicalisation, DuckDB in-process SQL over Pandas ' +
-      'DataFrames, and assertion-based guardrails. It is model-agnostic and supports both GPT-4o ' +
-      '(OpenAI) and Claude (Anthropic).',
+      'customer-service-agent is a transactional retail assistant prototype built in Python/Jupyter ' +
+      'that manages sunglasses inventory and natural-language requests (purchases, returns, stock ' +
+      'queries) end-to-end. It uses a formal tool registry, argument canonicalisation, DuckDB ' +
+      'in-process SQL over Pandas DataFrames, assertion-based validation, and propose-vs-commit ' +
+      'transaction tooling, with OpenAI GPT-4o driving plan reflection. It is a private prototype ' +
+      'repository, not deployed on this site.',
   },
   {
     id: 'repo-agentic-patterns',
@@ -382,14 +385,17 @@ export const CORPUS: KnowledgeChunk[] = [
   {
     id: 'portfolio-showcases',
     source: 'repo',
-    topic: 'four AI showcases in the digital portfolio',
+    topic: 'AI showcases in the digital portfolio',
     text:
-      'The portfolio contains four agentic AI showcases: (1) Recursive Portfolio Chatbot — a RAG ' +
+      'The portfolio contains five in-site agentic AI showcases: (1) Recursive Portfolio Chatbot — a RAG ' +
       'agent with a LangGraph correction loop using pgvector retrieval; (2) Deep Research Agent — ' +
       'a plan-and-execute pipeline that runs web searches via Tavily and synthesises an executive ' +
-      'summary with Claude Sonnet; (3) Crew Orchestrator — a multi-agent system where specialist ' +
-      'agents collaborate on a task; (4) Agent Playground — a live tool-use demo where a Claude ' +
-      'Haiku ReAct loop decides which tools to call.',
+      'summary with Claude Sonnet; (3) Software Architect Crew — a multi-agent system where a PM, ' +
+      'Coder, and Reviewer collaborate to produce reviewed code; (4) Agent Playground — a live tool-use demo ' +
+      'where a Claude Haiku ReAct loop decides which tools to call; and (5) Agent Skills Dashboard — a ' +
+      'sample observability UI for agent telemetry (work in progress; the metrics shown are illustrative ' +
+      'placeholders). Two further agents — a multi-agent market-research team and a transactional ' +
+      'customer-service agent — are Python/Jupyter prototypes kept in private repositories.',
   },
   {
     id: 'portfolio-rag-chatbot',
@@ -434,8 +440,9 @@ export const CORPUS: KnowledgeChunk[] = [
       'he built autonomous multi-step agents from scratch in Python with tool registries, ' +
       'argument resolution, state mutation with DuckDB, assertion-based guardrails, and ' +
       'reflection loops. He applies GitHub Copilot in agentic mode daily at the Bank of England, ' +
-      'and his portfolio showcases four deployed agentic demos using real APIs (Claude, OpenAI ' +
-      'embeddings, Tavily, pgvector) in a CI/CD-tested Vercel production environment.',
+      'and his portfolio runs four live agentic demos on real APIs (Claude, OpenAI ' +
+      'embeddings, Tavily, pgvector) in a CI/CD-tested Vercel production environment, alongside a ' +
+      'fifth showcase — a sample observability dashboard — and two Python prototypes.',
   },
   {
     id: 'cv-iac-experience',

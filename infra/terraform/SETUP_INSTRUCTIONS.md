@@ -259,7 +259,7 @@ Then:
 2. Stage A should pass (lint, type-check, unit tests)
 3. Vercel creates a Preview deployment
 4. Stage B should pass (Ragas evaluation, Playwright E2E)
-5. All 4 showcases should work with real data
+5. The four LLM showcases should work with real data (the dashboard is a static UI)
 
 ## Step 10: Merge to Production
 

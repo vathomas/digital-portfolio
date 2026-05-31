@@ -2,16 +2,16 @@ import { test, expect } from '@playwright/test';
 
 /**
  * Showcase 4 — Agent Playground
- * Route: /dashboard (AgentPlayground section inside AgentDashboard)
+ * Route: /playground
  *
  * Verifies:
  *  - Page loads and the playground input is visible
  *  - Asking a weather question triggers a tool trace with an action step
  *  - The trace shows at least one tool being called
  */
-test.describe('Agent Playground (/dashboard)', () => {
+test.describe('Agent Playground (/playground)', () => {
   test('page loads with playground input', async ({ page }) => {
-    await page.goto('/dashboard');
+    await page.goto('/playground');
     const input = page.getByPlaceholder(
       'Ask the agent something it needs to use tools to answer…',
     );
@@ -19,7 +19,7 @@ test.describe('Agent Playground (/dashboard)', () => {
   });
 
   test('weather query produces a tool-use trace', async ({ page }) => {
-    await page.goto('/dashboard');
+    await page.goto('/playground');
 
     const input = page.getByPlaceholder(
       'Ask the agent something it needs to use tools to answer…',
@@ -39,7 +39,7 @@ test.describe('Agent Playground (/dashboard)', () => {
   });
 
   test('trace lists at least one tool in the tools-used footer', async ({ page }) => {
-    await page.goto('/dashboard');
+    await page.goto('/playground');
 
     const input = page.getByPlaceholder(
       'Ask the agent something it needs to use tools to answer…',

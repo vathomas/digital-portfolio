@@ -2,16 +2,16 @@ import { test, expect } from '@playwright/test';
 
 /**
  * Showcase 1 — Recursive Portfolio Chatbot
- * Route: /about
+ * Route: /chat
  *
  * Verifies:
  *  - Page loads and the chat input is visible
  *  - Submitting a question receives a non-empty assistant reply
  *  - The thoughts trace is accessible and contains at least one step
  */
-test.describe('Chat widget (/about)', () => {
+test.describe('Chat widget (/chat)', () => {
   test('page loads with chat input', async ({ page }) => {
-    await page.goto('/about');
+    await page.goto('/chat');
     const input = page.getByPlaceholder("Ask about Thomas's background, skills, or projects…");
     await expect(input).toBeVisible();
   });
@@ -22,7 +22,7 @@ test.describe('Chat widget (/about)', () => {
     // Lift the budget so the 30 s toBeVisible below has room to actually run.
     test.setTimeout(90_000);
 
-    await page.goto('/about');
+    await page.goto('/chat');
 
     const input = page.getByPlaceholder("Ask about Thomas's background, skills, or projects…");
     await input.fill('Where does Thomas currently work?');
@@ -39,7 +39,7 @@ test.describe('Chat widget (/about)', () => {
     // Same cold-start consideration as the previous test.
     test.setTimeout(90_000);
 
-    await page.goto('/about');
+    await page.goto('/chat');
 
     const input = page.getByPlaceholder("Ask about Thomas's background, skills, or projects…");
     await input.fill('What certifications does Thomas have?');

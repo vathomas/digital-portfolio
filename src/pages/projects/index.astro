@@ -3,7 +3,21 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import ProjectFilterBar from '../../components/islands/ProjectFilterBar';
 import { getCollection } from 'astro:content';
 
-const projects = await getCollection('projects');
+// Order cards to match the top-menu showcase sequence (1 → 5), then the
+// off-site Python prototypes. Any future project not listed sorts to the end.
+const SHOWCASE_ORDER = [
+  'recursive-portfolio-chatbot', // 1 · Chat
+  'deep-research-agent',         // 2 · Research
+  'software-architect-crew',     // 3 · Crew
+  'agent-playground',            // 4 · Playground
+  'agent-skills-dashboard',      // 5 · Dashboard
+];
+const rank = (id: string) => {
+  const i = SHOWCASE_ORDER.indexOf(id);
+  return i === -1 ? Number.POSITIVE_INFINITY : i;
+};
+
+const projects = (await getCollection('projects')).sort((a, b) => rank(a.id) - rank(b.id));
 const projectData = projects.map((p) => ({
   slug: p.id,
   title: p.data.title,
