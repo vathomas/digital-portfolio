@@ -1,31 +1,36 @@
 ---
 title: "Agent Skills Dashboard"
-description: "Performance charts comparing GPT-4o vs. Llama 3 across my agents, tool-use accuracy metrics, and a live playground to trigger real agent actions."
-techStack: ["Recharts", "Postgres", "OpenAI", "Llama 3", "Astro", "FastAPI"]
+description: "Sample observability UI for agent runs — KPI strip, model latency-vs-success scatter, and per-tool accuracy. Metrics are placeholders today; the page is the aggregation surface that would sit over a production telemetry table."
+techStack: ["Astro", "React", "Recharts", "TypeScript", "Tailwind v4"]
 agentLogicType: "Tool-Use"
 status: "wip"
 publishedAt: 2025-09-01
 featured: true
 ---
 
-A high-signal technical showcase: rather than claiming AI expertise, this dashboard shows the data from running my agents in production over time.
+> **Sample observability UI — metrics are placeholders.** The dashboard renders
+> from a static TypeScript mock dataset, not a live telemetry pipeline. The
+> intent is to show the observability *surface* — what aggregations matter and
+> how they're laid out — not to claim live production numbers.
 
-## Key Charts
+A high-signal technical showcase of what an observability layer for the other portfolio agents would look like, rendered against a representative mock dataset.
 
-**Success Rate vs. Latency**
-Scatter plot comparing GPT-4o and a locally-hosted Llama 3 across agent tasks. Shows the cost/speed/quality tradeoff I've benchmarked directly — not theoretical numbers.
+## What's on the page
 
-**Tool Usage Accuracy**
-Bar chart showing how often each agent correctly selected and called the right custom API tool versus falling back or hallucinating a tool call. Broken down by task type.
+**KPI strip** — total runs, weighted success rate, weighted average latency, and tool accuracy across all models in the dataset.
 
-## Live Playground
+**Success Rate vs. Latency (scatter)** — each dot is a model, sized by total runs. Reveals the latency-vs-quality frontier: cloud models cluster top-right (slower, more accurate); local Llama variants trade quality for speed and cost.
 
-A "Playground" section lets visitors trigger a real tool-use event:
+**Tool Usage Accuracy (bar)** — per-tool success rate across all agent invocations in the dataset, sorted descending.
 
-> "Agent, get the weather in my location and recommend a project from my portfolio based on the current mood."
+**Model breakdown table** — model · hosting (cloud/local) · success · latency · runs · cost per 1k runs, with horizontal scroll on phones.
 
-The agent calls a weather API, reasons about the result, and returns a personalised project recommendation — with the full tool-call trace visible below the response.
+## Live playground
+
+The ReAct tool-use playground used to live at the bottom of this page; it now has its own route at **`/playground`**. Submit a query and watch the agent's thoughts, tool calls, and observations stream in over SSE.
 
 ## Data Source
 
-All metrics come from logged agent runs stored in **Postgres**, populated by the other three showcases as they run. The dashboard is the observability layer for the entire portfolio.
+Today: a static module at `src/lib/agent/dashboard-data.ts` exports `MODELS`, `TOOLS`, and a `summarize()` aggregation, with numbers chosen to look plausible for the model families involved.
+
+Planned: every agent run from the other showcases writes a row to a Postgres `agent_runs` table — model, tool calls, latency, success, cost — and this page becomes a thin read-only aggregation layer over it.
