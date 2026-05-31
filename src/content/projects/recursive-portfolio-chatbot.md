@@ -1,9 +1,9 @@
 ---
 title: "Recursive Portfolio Chatbot"
-description: "A self-correcting RAG agent that answers questions about my background using a LangGraph correction loop — with a 'See Thoughts' toggle showing internal reasoning."
-techStack: ["LangGraph", "Vercel AI SDK", "Postgres", "pgvector", "React"]
+description: "A self-correcting RAG agent that answers questions about my background using a real LangGraph correction loop — pgvector retrieval (with mock fallback), Claude Sonnet generation, and a 'See Thoughts' toggle exposing the full trace."
+techStack: ["LangGraph", "Vercel AI SDK", "Claude Sonnet", "pgvector", "React"]
 agentLogicType: "Self-Correcting"
-status: "wip"
+status: "live"
 publishedAt: 2025-06-01
 featured: true
 # Ragas scores are placeholders until the CI eval gate (Phase 3 Step 8b)
@@ -36,6 +36,6 @@ A toggle next to the chat exposes the agent's internal JSON reasoning trace in r
 
 ## Tech Choices
 
-- **LangGraph** for the stateful correction loop
-- **Vercel AI SDK** for streaming responses to the React island
-- **Postgres + pgvector** for semantic memory (resume, GitHub, project writeups)
+- **`@langchain/langgraph`** drives the actual stateful correction loop — `retrieve → grade → rewrite → retrieve → generate`, with a hard cap of 2 rewrite retries before falling through to whatever context is on hand.
+- **Vercel AI SDK (`ai`)** wraps the model calls. Generation uses **Claude Sonnet 4.5**; grading and rewriting use the faster **Claude Haiku 4.5**.
+- **Postgres + pgvector** holds the semantic memory (resume, GitHub activity, project write-ups). Embeddings are produced with **OpenAI text-embedding-3-small** (1536 dims). If `DATABASE_URL` / `OPENAI_API_KEY` are missing, retrieval falls back to a keyword-overlap pass over an in-memory corpus so `npm run dev` answers plausibly without provisioning Neon.
